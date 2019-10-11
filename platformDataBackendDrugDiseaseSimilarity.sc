@@ -82,7 +82,7 @@ object Loaders {
       .withColumn("tissue_list", expr(
         """
           |transform(filter(tissues,
-          | t -> t.rna.zscore >= 0 and t.protein.level > 0
+          | t -> t.rna.zscore > 0 or t.protein.level > 0
           |), x -> x.efo_code)
           |""".stripMargin))
       .drop("tissues")
@@ -433,12 +433,12 @@ def main(drugFilename: String,
           | (a, el) -> a + el
           |)
           |""".stripMargin))
-    .where("harmonic > 0.0")
+    .where("harmonic > 0.1")
     .join(dfT, Seq("target_id"))
     .join(dfD, Seq("disease_id"))
     .withColumn("new_drugs", array_except(col("drugs_for_target.drug_id"), col("drugs_for_disease.drug_id")))
     .withColumn("new_drugs_size", size(col("new_drugs")))
-    .where("new_Drugs_size > 0")
+    .where("new_drugs_size > 0")
 
   associations.write.json(outputPathPrefix + "/associations/")
 //  dfD.write.json(outputPathPrefix + "/diseases/")

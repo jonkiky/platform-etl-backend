@@ -1,29 +1,29 @@
 #!/bin/bash
 
 #/home/mkarmona
-#/home/mkarmona/tmp/ot/drug-disease-similarity/19.09_drug-data.json
-#/home/mkarmona/tmp/ot/drug-disease-similarity/19.09_efo-data.json
-#/home/mkarmona/tmp/ot/drug-disease-similarity/19.09_expression-data.json
-#/home/mkarmona/tmp/ot/drug-disease-similarity/19.09_gene-data.json
-#/home/mkarmona/tmp/ot/drug-disease-similarity/evidences_sampled.json
-#/home/mkarmona/tmp/ot/drug-disease-similarity/out_190920_evidences_drug_aggregation_1909/
-#/home/mkarmona/tmp/ot/drug-disease-similarity/predictions.190905.parquet/
-#/home/mkarmona/tmp/ot/drug-disease-similarity/protein_pair_interactions.json
-#/home/mkarmona/tmp/ot/drug-disease-similarity/significant_AEs_by_drug.json
-#/home/mkarmona/tmp/ot/drug-disease-similarity/significant_AEs_by_target.json
-#/home/mkarmona/tmp/ot/drug-disease-similarity/studies.parquet/
+#/data/drug_disease_similarity/19.09_drug-data.json
+#/data/drug_disease_similarity/19.09_efo-data.json
+#/data/drug_disease_similarity/19.09_expression-data.json
+#/data/drug_disease_similarity/19.09_gene-data.json
+#/data/drug_disease_similarity/evidences_sampled.json
+#/data/drug_disease_similarity/out_190920_evidences_drug_aggregation_1909/
+#/data/drug_disease_similarity/predictions.190905.parquet/
+#/data/drug_disease_similarity/protein_pair_interactions.json
+#/data/drug_disease_similarity/significant_AEs_by_drug.json
+#/data/drug_disease_similarity/significant_AEs_by_target.json
+#/data/drug_disease_similarity/studies.parquet/
 
-export JAVA_OPTS="-Xms1G -Xmx4G"
+export JAVA_OPTS="-Xms1G -Xmx200G"
 time amm platformDataBackendDrugDiseaseSimilarity.sc \
-  --drugFilename "/home/mkarmona/tmp/ot/drug-disease-similarity/19.09_drug-data.json" \
-  --targetFilename "/home/mkarmona/tmp/ot/drug-disease-similarity/19.09_gene-data.json" \
-  --diseaseFilename "/home/mkarmona/tmp/ot/drug-disease-similarity/19.09_efo-data.json" \
-  --evidenceFilename "/home/mkarmona/tmp/ot/drug-disease-similarity/19.06_evidence-data-100k.json" \
-  --interactionsFilename "/home/mkarmona/tmp/ot/drug-disease-similarity/protein_pair_interactions.json" \
-  --aggregatedDrugsFilename "/home/mkarmona/tmp/ot/drug-disease-similarity/out_190920_evidences_drug_aggregation_1909/part-*" \
-  --studiesFilename "/home/mkarmona/tmp/ot/drug-disease-similarity/studies.parquet/" \
-  --predictionsFilename "/home/mkarmona/tmp/ot/drug-disease-similarity/predictions.190905.parquet/" \
-  --faersByDrugFilename "/home/mkarmona/tmp/ot/drug-disease-similarity/significant_AEs_by_drug.json" \
-  --faersByTargetFilename "/home/mkarmona/tmp/ot/drug-disease-similarity/significant_AEs_by_target.json" \
-  --expressionFilename "/home/mkarmona/tmp/ot/drug-disease-similarity/19.09_expression-data.json" \
+  --drugFilename "/data/drug_disease_similarity/19.09_drug-data.json" \
+  --targetFilename "/data/drug_disease_similarity/19.09_gene-data.json" \
+  --diseaseFilename "/data/drug_disease_similarity/19.09_efo-data.json" \
+  --evidenceFilename "/data/drug_disease_similarity/19.09_evidence-data.json" \
+  --interactionsFilename "/data/drug_disease_similarity/protein_pair_interactions.json" \
+  --aggregatedDrugsFilename "/data/drug_disease_similarity/out_190920_evidences_drug_aggregation_1909/part-*" \
+  --studiesFilename "/data/drug_disease_similarity/studies.parquet/" \
+  --predictionsFilename "/data/drug_disease_similarity/predictions.190905.parquet/" \
+  --faersByDrugFilename "/data/drug_disease_similarity/significant_AEs_by_drug.json" \
+  --faersByTargetFilename "/data/drug_disease_similarity/significant_AEs_by_target.json" \
+  --expressionFilename "/data/drug_disease_similarity/19.09_expression-data.json" \
   --outputPathPrefix "drug_disease_similarity"
