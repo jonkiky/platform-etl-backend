@@ -463,8 +463,7 @@ def main(drugFilename: String,
 
   val drugDisease = drugDiseaseDF.withColumn("drug_hypothesis", explode(col("hypotheses")))
     .join(cachedAEs, col("drug_hypothesis") === col("drug_id"), "left_outer")
-    .withColumn("drug_hypothesis_aes", when(col("drug_ae_events").isNull, lit(Seq.empty[String]))
-      .otherwise(col("drug_ae_events")))
+    .withColumnRenamed("drug_ae_events", "drug_hypothesis_aes")
     .withColumn("disease_aes_from_drugs", when(col("_disease_aes_from_drugs").isNull, lit(Seq.empty[String]))
       .otherwise(col("_disease_aes_from_drugs")))
     .withColumn("drug_hypothesis_aes_except",
