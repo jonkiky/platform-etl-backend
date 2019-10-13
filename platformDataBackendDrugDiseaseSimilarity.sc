@@ -458,8 +458,7 @@ def main(drugFilename: String,
     "new_drugs as hypotheses"
   )
 
-  val cachedAEs = aesByDrug.selectExpr("drug_id", "drug_ae_event").groupBy(col("drug_id").asc)
-    .agg(collect_list(col("drug_ae_event")).as("drug_ae_events"))
+  val cachedAEs = aesByDrug.selectExpr("drug_id", "aes.drug_ae_event as drug_ae_events")
     .cache
 
   val drugDisease = drugDiseaseDF.withColumn("drug_hypothesis", explode(col("hypotheses")))
