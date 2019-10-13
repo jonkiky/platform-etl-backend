@@ -440,7 +440,42 @@ def main(drugFilename: String,
     .withColumn("new_drugs_size", size(col("new_drugs")))
     .where("new_drugs_size > 0")
 
-  associations.write.json(outputPathPrefix + "/associations/")
+  associations.write.parquet(outputPathPrefix + "/associations/")
+
+  val drugDiseaseDF = associations.selectExpr("disease_id",
+    "target_id",
+    "harmonic",
+    "harmonic_genetics",
+    "harmonic_literature",
+    "target_name",
+    "disease_name",
+    "therapeutic_areas",
+    "array_distinct(flatten(drugs_for_disease.drug_aes.drug_ae_event)) as _disease_aes_from_drugs",
+    "array_distinct(flatten(drugs_for_disease.indication_ids)) as disease_indication_from_drugs",
+    "array_max(flatten(max_clinical_trial_phase)) as disease_max_clinical_trial_phase_from_drugs",
+    "associated_disease_ids_from_disease_drug_agg",
+    "associated_target_ids_from_disease_drug_agg",
+    "new_drugs as hypotheses"
+  )
+
+  val cachedAEs = aesByDrug.selectExpr("drug_id", "drug_ae_event").groupBy(col("drug_id").asc)
+    .agg(collect_list(col("drug_ae_event")).as("drug_ae_events"))
+    .cache
+
+  val drugDisease = drugDiseaseDF.withColumn("drug_hypothesis", explode(col("hypotheses")))
+    .join(cachedAEs, Seq("drug_hypothesis"), "left_outer")
+    .withColumn("drug_hypothesis_aes", when(col("drug_ae_events").isNull, lit(Seq.empty[String]))
+      .otherwise(col("drug_ae_events")))
+    .withColumn("disease_aes_from_drugs", when(col("_disease_aes_from_drugs").isNull, lit(Seq.empty[String]))
+      .otherwise(col("_disease_aes_from_drugs")))
+    .withColumn("drug_hypothesis_aes_except",
+      expr("array_except(drug_hypothesis_aes, disease_aes_from_drugs)"))
+    // it needs to improve as a proper score
+    .withColumn("drug_aes_score", expr("size(drug_hypothesis_aes_except) / size(disease_aes_from_drugs)"))
+    .where("drug_aes_score > 0.0")
+
+  drugDisease.write.json(outputPathPrefix + "/drug_disease/")
+
 //  dfD.write.json(outputPathPrefix + "/diseases/")
 //  dfT.write.json(outputPathPrefix + "/targets/")
 //  geneticsEvidences.write.json(outputPathPrefix + "/genetics_evidences/")
