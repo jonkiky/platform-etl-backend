@@ -464,11 +464,14 @@ def main(drugFilename: String,
   val drugDisease = drugDiseaseDF.withColumn("drug_hypothesis", explode(col("hypotheses")))
     .join(cachedAEs, col("drug_hypothesis") === col("drug_id"), "left_outer")
     .withColumnRenamed("drug_ae_events", "drug_hypothesis_aes")
-    .withColumn("drug_hypothesis_aes_except",
-      expr("array_except(drug_hypothesis_aes, disease_aes_from_drugs)"))
+    .withColumn("drug_hypothesis_aes_score",
+      expr("1.0 - (size(array_except(drug_hypothesis_aes, disease_aes_from_drugs)) / size(drug_hypothesis_aes))"))
+    .withColumn("disease_aes_score",
+      expr("1.0 - (size(array_except(disease_aes_from_drugs, drug_hypothesis_aes)) / size(disease_aes_from_drugs))"))
     // it needs to improve as a proper score
-    .withColumn("drug_aes_score", expr("size(drug_hypothesis_aes_except) / size(disease_aes_from_drugs)"))
-//    .where("drug_aes_score > 0.0")
+    .withColumn("drug_hypothesis_disease_aes_score",
+      expr("drug_hypothesis_aes_score * disease_aes_score"))
+//    .where("drug_hypothesis_disease_aes_score > 0.0")
 
   drugDisease.write.json(outputPathPrefix + "/drug_disease/")
 
