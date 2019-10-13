@@ -450,7 +450,7 @@ def main(drugFilename: String,
     "target_name",
     "disease_name",
     "therapeutic_areas",
-    "array_distinct(flatten(transform(drugs_for_disease, d -> transform(d.drug_aes, ae -> ae.drug_ae_event)))) as _disease_aes_from_drugs",
+    "array_distinct(flatten(transform(drugs_for_disease, d -> transform(d.drug_aes, ae -> ae.drug_ae_event)))) as disease_aes_from_drugs",
     "array_distinct(flatten(drugs_for_disease.indication_ids)) as disease_indication_from_drugs",
     "array_max(drugs_for_disease.max_clinical_trial_phase) as disease_max_clinical_trial_phase_from_drugs",
     "associated_disease_ids as associated_disease_ids_from_disease_drug_agg",
@@ -464,8 +464,6 @@ def main(drugFilename: String,
   val drugDisease = drugDiseaseDF.withColumn("drug_hypothesis", explode(col("hypotheses")))
     .join(cachedAEs, col("drug_hypothesis") === col("drug_id"), "left_outer")
     .withColumnRenamed("drug_ae_events", "drug_hypothesis_aes")
-    .withColumn("disease_aes_from_drugs", when(col("_disease_aes_from_drugs").isNull, lit(Seq.empty[String]))
-      .otherwise(col("_disease_aes_from_drugs")))
     .withColumn("drug_hypothesis_aes_except",
       expr("array_except(drug_hypothesis_aes, disease_aes_from_drugs)"))
     // it needs to improve as a proper score
