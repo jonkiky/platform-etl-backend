@@ -462,7 +462,7 @@ def main(drugFilename: String,
     .cache
 
   val drugDisease = drugDiseaseDF.withColumn("drug_hypothesis", explode(col("hypotheses")))
-    .join(cachedAEs, Seq("drug_hypothesis"), "left_outer")
+    .join(cachedAEs, col("drug_hypothesis") === col("drug_id"), "left_outer")
     .withColumn("drug_hypothesis_aes", when(col("drug_ae_events").isNull, lit(Seq.empty[String]))
       .otherwise(col("drug_ae_events")))
     .withColumn("disease_aes_from_drugs", when(col("_disease_aes_from_drugs").isNull, lit(Seq.empty[String]))
