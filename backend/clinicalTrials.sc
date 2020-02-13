@@ -82,12 +82,23 @@ object Loaders extends LazyLogging {
       "interventionsOtherNames" -> _loadCSV(inputs.interventionsOtherNames),
       "interventionsMesh" -> _loadCSV(inputs.interventionsMesh),
       "conditions" -> _loadCSV(inputs.conditions),
-      "conditionsMesh" -> _loadCSV(inputs.conditionsMesh)
+      "conditionsMesh" -> _loadCSV(inputs.conditionsMesh),
+      "descriptions" -> _loadCSV(inputs.descriptions),
+      "designs" -> _loadCSV(inputs.designs)
     )
   }
 }
 
 object ClinicalTrials extends LazyLogging {
+  def computeDescriptions(inputs: Map[String, DataFrame])(implicit ss: SparkSession): DataFrame = {
+    import ss.implicits._
+
+    val descriptions = inputs("descriptions")
+
+    // todo nlp to get all tokens
+    descriptions.select($"nct_id", $"description")
+  }
+
   def computeConditions(inputs: Map[String, DataFrame])(implicit ss: SparkSession): DataFrame = {
     import ss.implicits._
 
@@ -216,6 +227,7 @@ object ClinicalTrials extends LazyLogging {
 
     val interventions = computeInterventions(ctMap)
     val conditions = computeConditions(ctMap)
+    val descriptions = computeDescriptions(ctMap)
 
     // joining references
     val studiesWithCitations = studies
@@ -227,6 +239,7 @@ object ClinicalTrials extends LazyLogging {
       .join(sponsors, Seq("nct_id"), "left_outer")
       .join(interventions, Seq("nct_id"), "left_outer")
       .join(conditions, Seq("nct_id"), "left_outer")
+      .join(descriptions, Seq("nct_id"), "left_outer")
       .persist()
 
     studies.unpersist()
