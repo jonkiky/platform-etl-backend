@@ -13,3 +13,5 @@
 /tmp
 /scratch
 /deprecated/resources/amm.application.conf
+.bloop
+metals.*
