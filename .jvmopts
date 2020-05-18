@@ -1,0 +1,4 @@
+-Xms1G
+-Xmx8G
+-Xss1M
+-server
