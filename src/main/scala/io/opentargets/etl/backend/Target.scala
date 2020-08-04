@@ -201,7 +201,7 @@ object TargetHelpers {
 
 // This is option/step target in the config file
 object Target extends LazyLogging {
-  def compute()(implicit context: ETLSessionContext): DataFrame = {
+  def apply()(implicit context: ETLSessionContext) = {
     implicit val ss = context.sparkSession
     import ss.implicits._
     import TargetHelpers._
@@ -224,15 +224,7 @@ object Target extends LazyLogging {
     val targetDFnewSchema = SparkHelpers.replaceSpacesSchema(inputDataFrame("target"))
     val tepDFnewSchema = SparkHelpers.replaceSpacesSchema(inputDataFrame("tep"))
 
-    targetDFnewSchema.setIdAndSelectFromTargets.addTEPInfo(tepDFnewSchema)
-  }
-
-  def apply()(implicit context: ETLSessionContext) = {
-    implicit val ss = context.sparkSession
-    import ss.implicits._
-    import TargetHelpers._
-
-    val targetDF = compute()
+    val targetDF = targetDFnewSchema.setIdAndSelectFromTargets.addTEPInfo(tepDFnewSchema)
 
     val outputs = Seq("targets")
 

@@ -17,7 +17,7 @@ lazy val root = (project in file("."))
       )
     ),
     name := "io-opentargets-etl-backend",
-    version := "0.3.5",
+    version := "0.3.0",
     resolvers ++= buildResolvers,
     libraryDependencies += scalaCheck,
     libraryDependencies ++= sparkDeps,
@@ -28,6 +28,9 @@ lazy val root = (project in file("."))
     libraryDependencies += typeSafeConfig,
     libraryDependencies ++= configDeps,
     testFrameworks += new TestFramework("minitest.runner.Framework"),
+//    assemblyShadeRules in assembly := {
+//      case ShadeRule.rename("com.google.**" -> "org.apache.gearpump.google.@1").inAll
+//    },
     assemblyMergeStrategy in assembly := {
       case PathList("META-INF", "services", "org.apache.hadoop.fs.FileSystem") =>
         MergeStrategy.filterDistinctLines
