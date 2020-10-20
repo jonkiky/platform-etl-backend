@@ -2,16 +2,32 @@ package io.opentargets.etl.backend
 
 import com.typesafe.scalalogging.LazyLogging
 import io.opentargets.etl.backend.Configuration.OTConfig
+import io.opentargets.etl.backend.HelpersTest.{getTestDf, sampleInputFunction, testStruct}
 import io.opentargets.etl.backend.spark.Helpers
 import org.scalatest.flatspec.AnyFlatSpecLike
 import org.scalatest.matchers.should.Matchers
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{DataFrame, Row}
-import org.apache.spark.sql.functions.lower
+import org.apache.spark.sql.{Column, DataFrame, Row, SparkSession}
 import org.scalatest.prop.TableDrivenPropertyChecks
 import io.opentargets.etl.backend.spark.Helpers._
 
 import scala.util.Random
+
+object HelpersTest {
+
+  // given
+  val sampleInputFunction: String => String = _.toUpperCase
+
+  lazy val testStruct: StructType =
+    StructType(
+      StructField("a", IntegerType, nullable = true) ::
+        StructField("b", LongType, nullable = false) ::
+        StructField("c", BooleanType, nullable = false) :: Nil)
+  lazy val testData: Seq[Row] = Seq(Row(1, 1L, true), Row(2, 2L, false))
+
+  def getTestDf(sparkSession: SparkSession): DataFrame =
+    sparkSession.createDataFrame(sparkSession.sparkContext.parallelize(testData), testStruct)
+}
 
 class HelpersTest
     extends AnyFlatSpecLike
@@ -19,18 +35,6 @@ class HelpersTest
     with Matchers
     with LazyLogging
     with SparkSessionSetup {
-
-
-  // given
-  val renameFun: String => String = _.toUpperCase
-  lazy val testStruct: StructType =
-    StructType(
-      StructField("a", IntegerType, nullable = true) ::
-        StructField("b", LongType, nullable = false) ::
-        StructField("c", BooleanType, nullable = false) :: Nil)
-  lazy val testData: Seq[Row] = Seq(Row(1, 1L, true), Row(2, 2L, false))
-  lazy val testDf: DataFrame =
-    sparkSession.createDataFrame(sparkSession.sparkContext.parallelize(testData), testStruct)
 
   "generateDefaultIoOutputConfiguration" should "generate a valid configuration for each of its input files" in {
     // given
@@ -69,7 +73,7 @@ class HelpersTest
   "Rename columns" should "rename all columns using given function" in {
 
     // when
-    val results: StructType = renameAllCols(testStruct, renameFun)
+    val results: StructType = renameAllCols(testStruct, sampleInputFunction)
     // then
     assert(results.fields.forall(sf => sf.name.head.isUpper))
   }
@@ -84,7 +88,7 @@ class HelpersTest
                .add("f", StringType)
                .add("g", IntegerType)))
     // when
-    val results = renameAllCols(structWithArray, renameFun)
+    val results = renameAllCols(structWithArray, sampleInputFunction)
     // then
     assert(
       results(3).dataType
@@ -95,17 +99,18 @@ class HelpersTest
         .forall(_.head.isUpper))
   }
 
-  private val potentialColumnNames = Table(
-    "column names",
-    "a", // shadow existing column name and case
-    "d", // new name
-    "A", // shadow existing column name, different case
-    "_", // special characters
-    "!",
-    Random.alphanumeric.take(100).mkString
-  ) // very long
   "nest" should "return dataframe with selected columns nested under new column" in {
     // given
+    val potentialColumnNames = Table(
+      "column names",
+      "a", // shadow existing column name and case
+      "d", // new name
+      "A", // shadow existing column name, different case
+      "_", // special characters
+      "!",
+      Random.alphanumeric.take(100).mkString
+    ) // very long
+    val testDf = getTestDf(sparkSession)
     logger.debug(s"Input DF structure ${testDf.printSchema}")
     val columnsToNest = testDf.columns.toList
     forAll(potentialColumnNames) { (colName: String) =>
@@ -121,6 +126,36 @@ class HelpersTest
       }
     }
 
+  }
+
+  "columnExpr" should "return the same number of columns as there are strings in allCols param" in {
+    // given
+    val partial = Set("a", "b", "c")
+    val full = Set("a", "b", "c", "d", "e")
+    // when
+    val result: Set[Column] = columnExpr(partial, full)
+    // then
+    assert(result.size equals full.size)
+  }
+
+  it should "throw an assertion error when there is an entry in mycol not in allcols" in {
+    // given
+    val partial = Set("a", "b", "c", "m")
+    val full = Set("a", "b", "c", "d", "e")
+    // when / then
+    assertThrows[AssertionError]{
+      val result = columnExpr(partial, full)
+    }
+  }
+
+  "unionDataframeDifferentSchema" should "'join' two DataFrames with different schema" in {
+    ???
+  }
+  "snakeToLowerCamelSchema" should "rename all columns in a dataframe from snake case to lower camel case" in {
+    ???
+  }
+  "replaceSpacesSchema" should "convert spaces in column names to underscores" in {
+    ???
   }
 
 }

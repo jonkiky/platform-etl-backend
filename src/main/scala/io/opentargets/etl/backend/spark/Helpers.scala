@@ -151,22 +151,28 @@ object Helpers extends LazyLogging {
     outputs
   }
 
-  /** generate a set of String with the union of Columns.
-    * Eg, myCols =( a,c,d) and allCols(a,c,d,e,f,h)
+  /** Combine two sets of Strings into a set of spark Columns.
+    *
+    * myCols must be a subset of allCols or else this method will fail with an assertion error.
+    *
+    * This function is primarily in place for the unionDataFrameDifferentSchema.
+    * Eg, myCols =(a,c,d) and allCols(a,c,d,e,f,h)
     * return (a,c,d,e,f,h)
     * @param myCols the list of the Columns in a specific Dataframe
     * @param allCols the list of Columns to match
-    * @return a sparksession object
+    * @return a set of String; one representing each column in allCols
     */
-  def columnExpr(myCols: Set[String], allCols: Set[String]) = {
-    val inter = (allCols intersect myCols).map(col)
-    val differ = (allCols diff myCols).map(lit(null).as(_))
+  def columnExpr(myCols: Set[String], allCols: Set[String]): Set[Column] = {
+    assert(myCols.forall(c => allCols.contains(c)))
+    val inter = (allCols intersect myCols).map(col) // a, c, d
+    val differ = (allCols diff myCols).map(lit(null).as(_)) // e, f, h
 
-    inter union differ
+    inter union differ // a, c, d, e, f, h
   }
 
   /** generate the union between two dataframe with different Schema.
     * df is the implicit dataframe
+    * Caution: Function may fail with nested structures in input DataFrames.
     * @param df2 Dataframe with possibly a different Columns
     * @return a DataFrame
     */
@@ -211,6 +217,7 @@ object Helpers extends LazyLogging {
 
     newDF
   }
+
 
   def renameAllCols(schema: StructType, fn: String => String): StructType = {
 
