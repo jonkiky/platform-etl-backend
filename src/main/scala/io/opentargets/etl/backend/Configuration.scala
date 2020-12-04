@@ -65,7 +65,8 @@ object Configuration extends LazyLogging {
       expression: InputInfo,
       tep: InputInfo,
       mousephenotypes: InputInfo,
-      interactions: InteractionsSection
+      interactions: InteractionsSection,
+      hpo: InputInfo
   )
 
   case class Common(defaultSteps: Seq[String], inputs: Inputs, output: String, outputFormat: String)

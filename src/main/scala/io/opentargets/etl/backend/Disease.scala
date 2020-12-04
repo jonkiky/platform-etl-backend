@@ -18,27 +18,8 @@ object DiseaseHelpers {
     import ss.implicits._
 
     def setIdAndSelectFromDiseases: DataFrame = {
-      val getParents = udf((codes: Seq[Seq[String]]) =>
-        codes
-          .flatMap{
-            path => if (path.size < 2) None else Some(path.reverse.slice(1, 2).head)
-          }.distinct
-      )
 
-      val dfPhenotypeId = df
-        .drop("type")
-        .withColumn(
-          "sourcePhenotypes",
-          when(
-            size(col("phenotypes")) > 0,
-            expr(
-              "transform(phenotypes, phRow -> named_struct('url', phRow.uri,'name',  phRow.label, 'disease', substring_index(phRow.uri, '/', -1)))"
-            )
-          )
-        )
-
-      val efosSummary = dfPhenotypeId
-        .withColumn("id", substring_index(col("code"), "/", -1))
+      val efosSummary = df
         .withColumn(
           "ancestors",
           array_except(
@@ -46,49 +27,21 @@ object DiseaseHelpers {
             array(col("id"))
           )
         )
-        .withColumn("parents", getParents(col("path_codes")))
         .drop("paths", "private", "_private", "path")
-        .withColumn(
-          "phenotypes",
-          when(size(col("sourcePhenotypes")) > 0, struct(col("sourcePhenotypes").as("rows")))
-            .otherwise(lit(null))
-        )
-        .withColumn("isTherapeuticArea", size(flatten(col("path_codes"))) === 1)
-        .as("isTherapeuticArea")
-        .withColumn("leaf", size(col("children")) === 0)
-        .withColumn(
-          "sources",
-          struct(
-            (col("code")).as("url"),
-            col("id").as("name")
-          )
-        )
-        .withColumn(
-          "ontology",
-          struct(
-            (col("isTherapeuticArea")).as("isTherapeuticArea"),
-            col("leaf").as("leaf"),
-            col("sources").as("sources")
-          )
-        )
-        // Change the value of children from array struct to array of code.
-        .withColumn(
-          "children",
-          array_distinct(expr("transform(children, child -> child.code)"))
-        )
 
       val descendants = efosSummary
         .where(size(col("ancestors")) > 0)
-        .withColumn("ancestor",
-          explode(concat(array(col("id")), col("ancestors"))))
+        .withColumn("ancestor", explode(concat(array(col("id")), col("ancestors"))))
         .groupBy("ancestor")
         .agg(collect_set(col("id")).as("descendants"))
         .withColumnRenamed("ancestor", "id")
-        .withColumn("descendants",
+        .withColumn(
+          "descendants",
           array_except(
             col("descendants"),
             array(col("id"))
-          ))
+          )
+        )
 
       val efos = efosSummary
         .join(descendants, Seq("id"), "left")
