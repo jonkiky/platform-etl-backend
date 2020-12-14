@@ -50,6 +50,7 @@ object DiseaseHelpers {
         .withColumnRenamed("label", "name")
         .withColumnRenamed("definition", "description")
         .withColumnRenamed("efo_synonyms", "synonyms")
+        .withColumnRenamed("synonyms_details", "synonymsDetails")
         .withColumnRenamed("therapeutic_codes", "therapeuticAreas")
         .drop(
           "definition_alternatives",

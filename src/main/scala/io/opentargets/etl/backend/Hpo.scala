@@ -18,7 +18,12 @@ object HpoHelpers {
     import Configuration._
     import ss.implicits._
 
-    def getHpoInfo(disease: DataFrame): DataFrame = {
+
+    def getHpo: DataFrame = {
+      df
+    }
+
+    def getDiseaseHpo(disease: DataFrame): DataFrame = {
 
       val diseaseXRefs = disease
         .withColumn("dbXRefId", explode(col("dbXRefs")))
@@ -26,8 +31,8 @@ object HpoHelpers {
         .select("dbXRefId", "diseaseId", "name")
 
       val hpoDiseaseMapping =
-        df.join(diseaseXRefs, col("dbXRefId") === col("databaseId"), "left")
-          .withColumn("qualifierNOT",   when(col("qualifier").isNull, false ).otherwise(true))
+        df.join(diseaseXRefs, col("dbXRefId") === col("databaseId"))
+          .withColumn("qualifierNOT", when(col("qualifier").isNull, false).otherwise(true))
           .distinct
           .withColumn("phenotypeId", regexp_replace(col("HPOId"), ":", "_"))
           .selectExpr(
@@ -61,23 +66,33 @@ object HpoHelpers {
 
 object Hpo extends LazyLogging {
 
-  def compute(disease: DataFrame)(implicit context: ETLSessionContext): DataFrame = {
+  def compute(disease: DataFrame)(implicit context: ETLSessionContext): Map[String, DataFrame] = {
     implicit val ss = context.sparkSession
     import ss.implicits._
     import HpoHelpers._
 
     val common = context.configuration.common
+
     val mappedInputs = Map(
+      "diseasehpo" -> IOResourceConfig(
+        common.inputs.diseasehpo.format,
+        common.inputs.diseasehpo.path
+      ),
       "hpo" -> IOResourceConfig(
         common.inputs.hpo.format,
         common.inputs.hpo.path
       )
     )
+
     val inputDataFrame = Helpers.readFrom(mappedInputs)
+    val diseasehpo = inputDataFrame("diseasehpo").getDiseaseHpo(disease)
 
-    val hpo = inputDataFrame("hpo").getHpoInfo(disease)
+    val hpo = inputDataFrame("hpo").getHpo
 
-    hpo
+    Map(
+      "diseasehpo" -> diseasehpo,
+      "hpo" -> hpo
+    )
   }
 
   def apply()(implicit context: ETLSessionContext) = {
@@ -85,16 +100,18 @@ object Hpo extends LazyLogging {
     import ss.implicits._
 
     val diseases = Disease.compute().selectExpr("id as diseaseId", "name", "dbXRefs")
-    val hpo = compute(diseases)
+    val hpoInfo = compute(diseases)
 
     logger.info(s"write to ${context.configuration.common.output}/hpo")
-    val outputConfs = Map(
-      "hpo" -> IOResourceConfig(
+
+    val outputs = hpoInfo.keys map (name =>
+      name -> Helpers.IOResourceConfig(
         context.configuration.common.outputFormat,
-        s"${context.configuration.common.output}/hpo"
+        context.configuration.common.output + s"/$name"
       )
     )
 
-    Helpers.writeTo(outputConfs, Map("hpo" -> hpo))
+    Helpers.writeTo(outputs.toMap, hpoInfo)
+
   }
 }
