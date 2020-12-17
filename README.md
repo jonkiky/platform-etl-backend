@@ -147,8 +147,8 @@ Here how to create a cluster using `gcloud` tool
 
 ```sh
 gcloud beta dataproc clusters create \
-    etl-cluster \
-    --image-version=1.5-debian10 \
+    etl-cluster-preview \
+    --image-version=preview-ubuntu \
     --properties=yarn:yarn.nodemanager.vmem-check-enabled=false,spark:spark.debug.maxToStringFields=1024,spark:spark.master=yarn \
     --master-machine-type=n1-highmem-16 \
     --master-boot-disk-size=500 \
@@ -167,13 +167,12 @@ And to submit the job (the jar can also by specified from a gs://...
 
 ```sh
 gcloud dataproc jobs submit spark \
-           --cluster=etl-cluster \
+           --cluster=etl-cluster-preview \
            --project=open-targets-eu-dev \
            --region=europe-west1 \
-           --async \
-           --files=mk-latest.conf \
-           --properties=spark.executor.extraJavaOptions=-Dconfig.file=mk-latest.conf,spark.driver.extraJavaOptions=-Dconfig.file=mk-latest.conf \
-           --jar=gs://ot-snapshots/etl/jars/io-opentargets-etl-backend-assembly-0.2.5.jar -- disease
+           --files=config.conf \
+           --properties=spark.executor.extraJavaOptions=-Dconfig.file=mk-latest.conf,spark.driver.extraJavaOptions=-Dconfig.file=config.conf \
+           --jar=gs://ot-snapshots/etl/jars/io-opentargets-etl-backend-assembly-0.4.2.jar 
 ```
 
 where `mk-latest.conf` is
@@ -183,6 +182,9 @@ common {
   output = "gs://ot-snapshots/etl/mk-latest"
 }
 ```
+
+The correct dataproc image needs to be used to support Spark 3. If not aleady the case, update all Spark dependences in
+`Dependencies.scala` to be _provided_ as these are already on the Dataproc cluster and can cause conflicts. 
 
 ### Adding ETL outputs to ElasticSearch
 
@@ -241,7 +243,7 @@ Additional resources are specified in the configuration as follows:
 ```
 ##### Synonyms
 
-The Drug Beta step supports the addition of supplementary synonym data sources subject to the following limitations:
+The Drug step supports the addition of supplementary synonym data sources subject to the following limitations:
 
 - The input file(s) must be: 
   - in json format
@@ -258,7 +260,7 @@ New synonyms are added to the 'synonyms' field on the object if they are not alr
 
 ##### Cross references 
 
-The Drug Beta step supports the addition of supplementary cross reference data sources subject to the following
+The Drug step supports the addition of supplementary cross reference data sources subject to the following
  limitations:
 
 - The input file(s) must: 
@@ -294,9 +296,9 @@ Inputs are specified in the `reference.conf` file and include the following:
 |   `drug-chembl-target` | ChEMBL - Platform Input Support |
 |   `drug-drugbank` | Release annotation file |
 
-The `DrugBeta` step also relies on several other sources that we already inputs to the ETL:
+The `Drug` step also relies on several other sources that we already inputs to the ETL:
 
-| Name in DrugBeta | Field in configuration file |
+| Name in Drug | Field in configuration file |
 | --- | --- |
 | `efo` | disease | 
 | `gene` | target | 
@@ -332,6 +334,11 @@ ln -s $PWD/hooks/pre-commit.scalafmt .git/hooks/pre-commit
 After this, every commit will trigger scalafmt to run and ```--no-verify``` can be 
 used to ignore that step if absolutely necessary.
 
+# Deprecate 
+
+The following steps are not required to be run for a data release and may be removed in future:
+ - ddr
+- network
 
 
 # Copyright
