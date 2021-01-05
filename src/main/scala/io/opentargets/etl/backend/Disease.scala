@@ -52,6 +52,7 @@ object DiseaseHelpers {
         .withColumnRenamed("efo_synonyms", "synonyms")
         .withColumnRenamed("synonyms_details", "synonymsDetails")
         .withColumnRenamed("therapeutic_codes", "therapeuticAreas")
+        .withColumnRenamed("obsolete_terms", "obsoleteTerms")
         .drop(
           "definition_alternatives",
           "path_codes",

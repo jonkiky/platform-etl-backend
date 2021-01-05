@@ -20,7 +20,7 @@ object HpoHelpers {
 
 
     def getHpo: DataFrame = {
-      df
+      df.filter(size(col("namespace")) > 0)
     }
 
     def getDiseaseHpo(disease: DataFrame): DataFrame = {
