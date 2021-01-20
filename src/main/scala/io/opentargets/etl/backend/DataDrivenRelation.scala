@@ -66,11 +66,12 @@ object DataDrivenRelation extends LazyLogging {
     val dfOutputs = inputDataFrame("ddr").getDataDrivenRelationgEntity
 
     // TODO THIS NEEDS MORE REFACTORING WORK AS IT CAN BE SIMPLIFIED
-    val outputs = dfOutputs.map {
-      case (dfName, df) =>
-        val name = IOResourceConfig(context.configuration.common.outputFormat,
-                                    context.configuration.common.output + s"/$dfName")
-        (dfName -> name, dfName -> df)
+    val outputs = dfOutputs.map { case (dfName, df) =>
+      val name = IOResourceConfig(
+        context.configuration.common.outputFormat,
+        context.configuration.common.output + s"/$dfName"
+      )
+      (dfName -> name, dfName -> df)
     }
     val unzipped = outputs.unzip
     Helpers.writeTo(unzipped._1.toMap, unzipped._2.toMap)

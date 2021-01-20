@@ -29,10 +29,12 @@ object Eco extends LazyLogging {
     val outputs = Seq(dfName)
     // TODO THIS NEEDS MORE REFACTORING WORK AS IT CAN BE SIMPLIFIED
     val outputConfs = outputs
-      .map(
-        name =>
-          name -> IOResourceConfig(context.configuration.common.outputFormat,
-                                   context.configuration.common.output + s"/$name"))
+      .map(name =>
+        name -> IOResourceConfig(
+          context.configuration.common.outputFormat,
+          context.configuration.common.output + s"/$name"
+        )
+      )
       .toMap
 
     val outputDFs = (outputs zip Seq(ecoDF)).toMap

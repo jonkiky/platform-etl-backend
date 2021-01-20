@@ -11,6 +11,7 @@ import org.apache.spark.sql.types._
 import org.apache.spark.sql.functions._
 
 object Loaders {
+
   /** load a drug datasset from OpenTargets drug index dump */
   def loadDrugs(path: String)(implicit ss: SparkSession): DataFrame = {
     val drugList = ss.read.json(path)
@@ -34,7 +35,7 @@ object Loaders {
 }
 
 object Transformers {
-  implicit class Implicits (val df: DataFrame) {
+  implicit class Implicits(val df: DataFrame) {
     def setIdAndSelectFromTargets: DataFrame = {
       val selectExpressions = Seq(
         "id",
@@ -44,23 +45,23 @@ object Transformers {
         "case when (hgnc_id = '') then null else hgnc_id end as hgncId",
         "name_synonyms as nameSynonyms",
         "symbol_synonyms as symbolSynonyms",
-        "struct(chromosome, gene_start as start, gene_end as end, strand) as genomicLocation")
+        "struct(chromosome, gene_start as start, gene_end as end, strand) as genomicLocation"
+      )
 
       val uniprotStructure = """
-        |case
-        |  when (uniprot_id = '' or uniprot_id = null) then null
-        |  else struct(uniprot_id as id,
-        |    uniprot_accessions as accessions,
-        |    uniprot_function as functions)
-        |end as proteinAnnotations
-        |""".stripMargin
+                               |case
+                               |  when (uniprot_id = '' or uniprot_id = null) then null
+                               |  else struct(uniprot_id as id,
+                               |    uniprot_accessions as accessions,
+                               |    uniprot_function as functions)
+                               |end as proteinAnnotations
+                               |""".stripMargin
 
-      df.selectExpr(selectExpressions :+ uniprotStructure:_*)
+      df.selectExpr(selectExpressions :+ uniprotStructure: _*)
     }
 
     def setIdAndSelectFromDiseases: DataFrame = {
-      val genAncestors = udf((codes: Seq[Seq[String]]) =>
-        codes.view.flatten.toSet.toSeq)
+      val genAncestors = udf((codes: Seq[Seq[String]]) => codes.view.flatten.toSet.toSeq)
 
       val efos = df
         .withColumn("id", substring_index(col("code"), "/", -1))
@@ -75,17 +76,21 @@ object Transformers {
         .agg(collect_set(col("id")).as("descendants"))
         .withColumnRenamed("ancestor", "id")
 
-      efos.join(descendants, Seq("id"))
+      efos
+        .join(descendants, Seq("id"))
         .drop("code", "children", "path_codes", "path_labels")
     }
 
     def setIdAndSelectFromDrugs(evidences: DataFrame): DataFrame = {
       def _getUniqTargetsAndDiseasesPerDrugId(evs: DataFrame): DataFrame = {
-        evs.filter(col("sourceID") === "chembl")
+        evs
+          .filter(col("sourceID") === "chembl")
           .withColumn("drug_id", substring_index(col("drug.id"), "/", -1))
           .groupBy(col("drug_id"))
-          .agg(collect_set(col("target.id")).as("linkedTargets"),
-            collect_set(col("disease.id")).as("linkedDiseases"))
+          .agg(
+            collect_set(col("target.id")).as("linkedTargets"),
+            collect_set(col("disease.id")).as("linkedDiseases")
+          )
           .withColumn("linkedTargetsCount", size(col("linkedTargets")))
           .withColumn("linkedDiseasesCount", size(col("linkedDiseases")))
       }
@@ -102,7 +107,8 @@ object Transformers {
         "internal_compound as internalCompound",
         "struct(ifnull(linkedTargetsCount, 0) as count, ifnull(linkedTargets, array()) as rows) as linkedTargets",
         "struct(ifnull(linkedDiseasesCount,0) as count, ifnull(linkedDiseases,array()) as rows) as linkedDiseases",
-        "withdrawnNotice")
+        "withdrawnNotice"
+      )
 
       val mechanismsOfAction =
         """
@@ -116,20 +122,37 @@ object Transformers {
           |  array_distinct(transform(mechanisms_of_action, x -> x.target_type)) as uniqueTargetTypes) as mechanismsOfAction
           |""".stripMargin
 
-      df.join(_getUniqTargetsAndDiseasesPerDrugId(evidences), col("id") === col("drug_id"), "left_outer")
-        .withColumn("withdrawnNotice", when(col("withdrawn_class").isNull and col("withdrawn_country").isNull and
-        col("withdrawn_year").isNull, lit(null))
-        .otherwise(struct(col("withdrawn_class").as("classes"),
-          col("withdrawn_country").as("countries"),
-          col("withdrawn_year").as("year"))))
-        .selectExpr(selectExpression ++ Seq(mechanismsOfAction):_*)
+      df.join(
+        _getUniqTargetsAndDiseasesPerDrugId(evidences),
+        col("id") === col("drug_id"),
+        "left_outer"
+      ).withColumn(
+        "withdrawnNotice",
+        when(
+          col("withdrawn_class").isNull and col("withdrawn_country").isNull and
+            col("withdrawn_year").isNull,
+          lit(null)
+        )
+          .otherwise(
+            struct(
+              col("withdrawn_class").as("classes"),
+              col("withdrawn_country").as("countries"),
+              col("withdrawn_year").as("year")
+            )
+          )
+      ).selectExpr(selectExpression ++ Seq(mechanismsOfAction): _*)
     }
   }
 }
 
 @main
-def main(drugFilename: String, targetFilename: String, diseaseFilename: String,
-         evidenceFilename: String, outputPathPrefix: String): Unit = {
+def main(
+    drugFilename: String,
+    targetFilename: String,
+    diseaseFilename: String,
+    evidenceFilename: String,
+    outputPathPrefix: String
+): Unit = {
   val sparkConf = new SparkConf()
     .set("spark.driver.maxResultSize", "0")
     .setAppName("similarities-loaders")
@@ -149,15 +172,12 @@ def main(drugFilename: String, targetFilename: String, diseaseFilename: String,
   val diseases = Loaders.loadDiseases(diseaseFilename)
   val evidences = Loaders.loadEvidences(evidenceFilename)
 
-  diseases
-    .setIdAndSelectFromDiseases
-    .write.json(outputPathPrefix + "/diseases/")
+  diseases.setIdAndSelectFromDiseases.write.json(outputPathPrefix + "/diseases/")
 
-  targets
-    .setIdAndSelectFromTargets
-    .write.json(outputPathPrefix + "/targets/")
+  targets.setIdAndSelectFromTargets.write.json(outputPathPrefix + "/targets/")
 
   drugs
     .setIdAndSelectFromDrugs(evidences)
-    .write.json(outputPathPrefix + "/drugs/")
+    .write
+    .json(outputPathPrefix + "/drugs/")
 }

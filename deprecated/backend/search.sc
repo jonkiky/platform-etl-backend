@@ -497,7 +497,7 @@ object Search extends LazyLogging {
       .persist(StorageLevel.DISK_ONLY)
 
     val dLUT = diseases
-    //      .withColumn("phenotype_labels", expr("transform(phenotypes, f -> f.label)"))
+      //      .withColumn("phenotype_labels", expr("transform(phenotypes, f -> f.label)"))
       .withColumn(
         "disease_labels",
         C.flattenCat(
@@ -546,12 +546,12 @@ object Search extends LazyLogging {
     )
     logger.info("subselect indirect LLR associations just id and score and persist")
     val associationScores = llrAssoc._2
-    //      .selectExpr("harmonic_sum.overall as score",
-    //                  "id as association_id",
-    //                  "target.id as target_id",
-    //                  "disease.id as disease_id")
-    // this needs to be addressed as the assocs llr does not create the correct structure to be
-    // compatible with the standard associations
+      //      .selectExpr("harmonic_sum.overall as score",
+      //                  "id as association_id",
+      //                  "target.id as target_id",
+      //                  "disease.id as disease_id")
+      // this needs to be addressed as the assocs llr does not create the correct structure to be
+      // compatible with the standard associations
       .selectExpr(
         "harmonic_sum.overall as score",
         "id as association_id",

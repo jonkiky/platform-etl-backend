@@ -130,7 +130,7 @@ object ClinicalTrials extends LazyLogging {
     val meshes = inputs("interventionsMesh")
 
     val others = otherNames
-    // .withColumn("name", rtrim(trim(lower($"name")), ","))
+      // .withColumn("name", rtrim(trim(lower($"name")), ","))
       .groupBy($"nct_id", $"intervention_id".as("id"))
       .agg(first($"name").as("name"), collect_set($"name").as("other_names"))
       .withColumn("other_names", concat($"other_names", array($"name")))
@@ -263,13 +263,12 @@ object ClinicalTrials extends LazyLogging {
     val drugsExploded = drugs
       .withColumn("drug_name_exploded", explode($"drug_names"))
 
-    /**
-      * creates DataFrame: {
+    /** creates DataFrame: {
       *   nct_id
       *   drugs
       *     - drug_id
       *     - drug_mechanisms_of_action
-    *     }
+      *     }
       */
     val studiesWithInterventions = studiesWithCitations
       .select("nct_id", "intervention_names")

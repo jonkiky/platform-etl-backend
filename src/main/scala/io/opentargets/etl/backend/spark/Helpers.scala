@@ -66,16 +66,18 @@ object Helpers extends LazyLogging {
     * it returns a pair that can be used to create a map of transformations. Useful to use with
     * withColumn DataFrame function too
     */
-  def trans(inColumn: Column,
-            newNameFn: String => String,
-            columnFn: Column => Column): (String, Column) = {
+  def trans(
+      inColumn: Column,
+      newNameFn: String => String,
+      columnFn: Column => Column
+  ): (String, Column) = {
 
     newNameFn(inColumn.toString) -> columnFn(inColumn)
   }
 
   /** using the uri get the last token as an ID by example
     * http://identifiers.org/chembl.compound/CHEMBL207538 -> CHEMBL207538
-    * */
+    */
   def stripIDFromURI(uri: Column): Column =
     substring_index(uri, "/", -1)
 
@@ -146,15 +148,17 @@ object Helpers extends LazyLogging {
           s"Separated value filed ${pathInfo.path} selected without specifying header and/or delimiter values"
         )
         // killing program through exception.
-        assert(assertion = false, s"Unable to complete pipeline due to bad file configuration for $pathInfo")
+        assert(
+          assertion = false,
+          s"Unable to complete pipeline due to bad file configuration for $pathInfo"
+        )
         session.emptyDataFrame
       // All other formats
       case _ => session.read.format(pathInfo.format).load(pathInfo.path)
     }
   }
 
-  /**
-    * Helper function to prepare multiple files of the same category to be read by `readFrom`
+  /** Helper function to prepare multiple files of the same category to be read by `readFrom`
     * @param resourceConfigs collection of IOResourceConfig of unknown composition
     * @return Map with random keys to input resource.
     */
@@ -202,7 +206,9 @@ object Helpers extends LazyLogging {
 
     // Union between two dataframes with different schema. columnExpr helps to unify the schema
     val unionDF =
-      df.select(columnExpr(cols1, total).toList: _*).unionByName(df2.select(columnExpr(cols2, total).toList: _*))
+      df.select(columnExpr(cols1, total).toList: _*)
+        .unionByName(df2.select(columnExpr(cols2, total).toList: _*))
+
     unionDF
   }
 

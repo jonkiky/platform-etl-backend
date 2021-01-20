@@ -118,7 +118,8 @@ object EvidenceDrug extends LazyLogging {
       "evidenceDrug" -> IOResourceConfig(
         context.configuration.common.outputFormat,
         context.configuration.common.output + "/evidenceDrug"
-      ))
+      )
+    )
 
     Helpers.writeTo(outputConfs, Map("evidenceDrug" -> dfEvidencesDrug))
   }

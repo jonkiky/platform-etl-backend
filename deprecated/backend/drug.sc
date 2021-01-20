@@ -191,25 +191,23 @@ object DrugHelpers {
       )
 
       df.join(
-          _getUniqTargetsAndDiseasesPerDrugId(evidences),
-          col("id") === col("drug_id"),
-          "left_outer"
-        )
-        .withColumn(
-          "withdrawnNotice",
-          when(
-            col("withdrawn_class").isNull and col("withdrawn_country").isNull and
-              col("withdrawn_year").isNull,
-            lit(null)
-          ).otherwise(
-            struct(
-              col("withdrawn_class").as("classes"),
-              col("withdrawn_country").as("countries"),
-              col("withdrawn_year").as("year")
-            )
+        _getUniqTargetsAndDiseasesPerDrugId(evidences),
+        col("id") === col("drug_id"),
+        "left_outer"
+      ).withColumn(
+        "withdrawnNotice",
+        when(
+          col("withdrawn_class").isNull and col("withdrawn_country").isNull and
+            col("withdrawn_year").isNull,
+          lit(null)
+        ).otherwise(
+          struct(
+            col("withdrawn_class").as("classes"),
+            col("withdrawn_country").as("countries"),
+            col("withdrawn_year").as("year")
           )
         )
-        .selectExpr(selectExpression ++ Seq(mechanismsOfAction, indications): _*)
+      ).selectExpr(selectExpression ++ Seq(mechanismsOfAction, indications): _*)
         .withColumn(
           "description",
           descriptionFn(

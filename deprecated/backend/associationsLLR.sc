@@ -119,17 +119,15 @@ object AssociationsLLRHelpers {
 
     def groupByDataTypes: DataFrame = {
       df.groupBy(
-          $"disease_id",
-          $"target_id",
-          $"dataType"
-        )
-        .agg(
-          first($"target_id").as("target"),
-          first($"disease_id").as("disease"),
-          collect_list($"datasource_llr").as("datasource_llrs"),
-          collect_list($"datasource_score").as("datasource_scores")
-        )
-        .withColumn("_v", expr("flatten(transform(datasource_scores, x -> map_values(x)))"))
+        $"disease_id",
+        $"target_id",
+        $"dataType"
+      ).agg(
+        first($"target_id").as("target"),
+        first($"disease_id").as("disease"),
+        collect_list($"datasource_llr").as("datasource_llrs"),
+        collect_list($"datasource_score").as("datasource_scores")
+      ).withColumn("_v", expr("flatten(transform(datasource_scores, x -> map_values(x)))"))
         .harmonic("_hs", "_v")
         .withColumn(
           "datatype_llr",
@@ -142,18 +140,16 @@ object AssociationsLLRHelpers {
 
     def groupByPair: DataFrame = {
       df.groupBy(
-          $"disease_id",
-          $"target_id"
-        )
-        .agg(
-          first($"target").as("target"),
-          first($"disease").as("disease"),
-          flatten(collect_list($"datasource_llrs")).as("datasource_llrs"),
-          flatten(collect_list($"datasource_scores")).as("datasource_scores"),
-          collect_list($"datatype_llr").as("datatype_llrs"),
-          collect_list($"datatype_score").as("datatype_scores")
-        )
-        .withColumn("id", concat_ws("-", $"target_id", $"disease_id"))
+        $"disease_id",
+        $"target_id"
+      ).agg(
+        first($"target").as("target"),
+        first($"disease").as("disease"),
+        flatten(collect_list($"datasource_llrs")).as("datasource_llrs"),
+        flatten(collect_list($"datasource_scores")).as("datasource_scores"),
+        collect_list($"datatype_llr").as("datatype_llrs"),
+        collect_list($"datatype_score").as("datatype_scores")
+      ).withColumn("id", concat_ws("-", $"target_id", $"disease_id"))
         .withColumn(
           "datasource_scores",
           expr(
@@ -261,9 +257,10 @@ object Loaders extends LazyLogging {
 }
 
 object AssociationsLLR extends LazyLogging {
+
   /** compute direct and indirect LLR per datasource instead of harmonic method and
-   * returns (direct, indirect) datasets pair
-   */
+    * returns (direct, indirect) datasets pair
+    */
   def compute(config: Config)(implicit ss: SparkSession): (DataFrame, DataFrame) = {
     val associationsSec = Configuration.loadAssociationSection(config)
     val commonSec = Configuration.loadCommon(config)
@@ -301,7 +298,8 @@ object AssociationsLLR extends LazyLogging {
         direct.write.json(commonSec.output + "/direct_llr/")
         indirect.write.json(commonSec.output + "/indirect_llr/")
 
-      case _ => logger.error("Associations llr have to return both, direct and indirect computations")
+      case _ =>
+        logger.error("Associations llr have to return both, direct and indirect computations")
     }
   }
 }

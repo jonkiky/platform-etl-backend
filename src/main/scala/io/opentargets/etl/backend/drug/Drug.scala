@@ -8,8 +8,7 @@ import io.opentargets.etl.backend.spark.Helpers.IOResourceConfig
 import org.apache.spark.sql.functions.{array_contains, coalesce, col, map_keys, typedLit}
 import org.apache.spark.sql.{DataFrame, SparkSession}
 
-/**
-  * This step will eventually replace the existing Drug step.
+/** This step will eventually replace the existing Drug step.
   *
   * It incorporates processing which was previously done in the `data-pipeline` project and consolidates all the logic in
   * this class.
@@ -25,21 +24,31 @@ object Drug extends Serializable with LazyLogging {
 
     logger.info("Loading raw inputs for Drug beta step.")
     val mappedInputs = Map(
-      "indication" -> IOResourceConfig(drugInputs.chemblIndication.format,
-                                       drugInputs.chemblIndication.path),
-      "mechanism" -> IOResourceConfig(drugInputs.chemblMechanism.format,
-                                      drugInputs.chemblMechanism.path),
-      "molecule" -> IOResourceConfig(drugInputs.chemblMolecule.format,
-                                     drugInputs.chemblMolecule.path),
-      "target" -> IOResourceConfig(drugInputs.chemblTarget.format,
-                                   drugInputs.chemblTarget.path),
-      "drugbankChemblMap" -> IOResourceConfig(drugInputs.drugbankToChembl.format,
-                                              drugInputs.drugbankToChembl.path,
-                                              Some("\\t"),
-                                              Some(true)),
+      "indication" -> IOResourceConfig(
+        drugInputs.chemblIndication.format,
+        drugInputs.chemblIndication.path
+      ),
+      "mechanism" -> IOResourceConfig(
+        drugInputs.chemblMechanism.format,
+        drugInputs.chemblMechanism.path
+      ),
+      "molecule" -> IOResourceConfig(
+        drugInputs.chemblMolecule.format,
+        drugInputs.chemblMolecule.path
+      ),
+      "target" -> IOResourceConfig(drugInputs.chemblTarget.format, drugInputs.chemblTarget.path),
+      "drugbankChemblMap" -> IOResourceConfig(
+        drugInputs.drugbankToChembl.format,
+        drugInputs.drugbankToChembl.path,
+        Some("\\t"),
+        Some(true)
+      ),
       "efo" -> IOResourceConfig(drugInputs.diseasePipeline.format, drugInputs.diseasePipeline.path),
       "gene" -> IOResourceConfig(drugInputs.targetPipeline.format, drugInputs.targetPipeline.path),
-      "evidence" -> IOResourceConfig(drugInputs.evidencePipeline.format, drugInputs.evidencePipeline.path)
+      "evidence" -> IOResourceConfig(
+        drugInputs.evidencePipeline.format,
+        drugInputs.evidencePipeline.path
+      )
     )
 
     val inputDataFrames = Helpers.readFrom(mappedInputs)
@@ -82,7 +91,8 @@ object Drug extends Serializable with LazyLogging {
     }
 
     logger.info(
-      "Joining molecules, indications, mechanisms of action, and target and disease linkages.")
+      "Joining molecules, indications, mechanisms of action, and target and disease linkages."
+    )
 
     // We define a drug as having either a drugbank id, a mechanism of action, or an indication.
     val drugMolecule = array_contains(map_keys(col("crossReferences")), "drugbank") ||
@@ -114,7 +124,9 @@ object Drug extends Serializable with LazyLogging {
   Final tidying up that aren't business logic but are nice to have for consistent outputs.
    */
   def cleanup(df: DataFrame): DataFrame = {
-    Seq("tradeNames", "synonyms").foldLeft(df)((dataF, column)=> { dataF.withColumn(column, coalesce(col(column), typedLit(Seq.empty)))})
+    Seq("tradeNames", "synonyms").foldLeft(df)((dataF, column) => {
+      dataF.withColumn(column, coalesce(col(column), typedLit(Seq.empty)))
+    })
   }
 
 }

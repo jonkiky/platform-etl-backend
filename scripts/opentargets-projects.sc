@@ -15,8 +15,7 @@ import org.apache.spark.sql.types._
 import org.apache.spark.sql._
 import com.typesafe.scalalogging.LazyLogging
 
-/**
-  Spark common functions
+/**  Spark common functions
   */
 object SparkSessionWrapper extends LazyLogging {
   logger.info("Spark Session init")
@@ -57,15 +56,16 @@ object ETL extends LazyLogging {
 
     projects
       .where($"EFO Disease ID".isNotNull)
-      .selectExpr(expressions:_*)
-      .withColumn("project", struct(selectedColumns:_*))
+      .selectExpr(expressions: _*)
+      .withColumn("project", struct(selectedColumns: _*))
       .select("efo_code", "project")
   }
 
   def getDiseases(uri: String)(implicit ss: SparkSession): DataFrame = {
     import ss.implicits._
 
-    val diseases = ss.read.json(uri)
+    val diseases = ss.read
+      .json(uri)
       .withColumn("id", substring_index(col("code"), "/", -1))
       .withColumn(
         "ancestors",
@@ -77,16 +77,17 @@ object ETL extends LazyLogging {
 
     val descendants = diseases
       .where(size(col("ancestors")) > 0)
-      .withColumn("ancestor",
-        explode(concat(array(col("id")), col("ancestors"))))
+      .withColumn("ancestor", explode(concat(array(col("id")), col("ancestors"))))
       .groupBy("ancestor")
       .agg(collect_set(col("id")).as("descendants"))
       .withColumnRenamed("ancestor", "id")
-      .withColumn("descendants",
+      .withColumn(
+        "descendants",
         array_except(
           col("descendants"),
           array(col("id"))
-        ))
+        )
+      )
 
     val efos = diseases
       .join(descendants, Seq("id"), "left")
@@ -100,15 +101,16 @@ object ETL extends LazyLogging {
     val diseases = getDiseases(diseaseUri)
     val projects = getProjects(projectsUri)
 
-    val aggProjects = projects.join(diseases, col("efo_code") === col("id"), "inner")
-      .withColumn("ancestor",
-        explode(concat(array(col("id")), col("ancestors"))))
+    val aggProjects = projects
+      .join(diseases, col("efo_code") === col("id"), "inner")
+      .withColumn("ancestor", explode(concat(array(col("id")), col("ancestors"))))
       .groupBy(col("ancestor").as("efo_id"))
       .agg(collect_set(col("project")).as("projects"))
 
     aggProjects
       .coalesce(1)
-      .write.json(outputUri)
+      .write
+      .json(outputUri)
   }
 }
 
@@ -118,7 +120,5 @@ object ETL extends LazyLogging {
   gsutil -m cp gs://ot-snapshots/jsonl/20.04/20.04_efo-data.json .
  */
 @main
-def main(diseaseUri: String,
-         projectsUri: String,
-         outputUri: String): Unit =
+def main(diseaseUri: String, projectsUri: String, outputUri: String): Unit =
   ETL(diseaseUri, projectsUri, outputUri)

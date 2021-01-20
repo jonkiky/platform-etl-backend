@@ -49,8 +49,10 @@ object Loaders extends LazyLogging {
     val drugs = ss.read
       .json(path)
       .where($"number_of_mechanisms_of_action" > 0)
-      .withColumn("drug_names",
-                  expr("transform(concat(array(pref_name), synonyms, trade_names), x -> lower(x))"))
+      .withColumn(
+        "drug_names",
+        expr("transform(concat(array(pref_name), synonyms, trade_names), x -> lower(x))")
+      )
       .selectExpr(
         "id as drug_id",
         "lower(pref_name) as drug_name",
@@ -63,8 +65,9 @@ object Loaders extends LazyLogging {
     drugs
   }
 
-  def loadDailymed(inputs: Configuration.Dailymed)(
-      implicit ss: SparkSession): Map[String, DataFrame] = {
+  def loadDailymed(
+      inputs: Configuration.Dailymed
+  )(implicit ss: SparkSession): Map[String, DataFrame] = {
     import ss.implicits._
 
     def _loadXML(path: String)(implicit ss: SparkSession) = {
@@ -75,9 +78,11 @@ object Loaders extends LazyLogging {
           StructField(name = "setId", dataType = StringType, nullable = false),
           StructField(name = "genericMedicine", dataType = StringType, nullable = true),
           StructField(name = "activeMoiety", dataType = StringType, nullable = true),
-          StructField(name = "ingredientSubstances",
-                      dataType = ArrayType(StringType),
-                      nullable = true)
+          StructField(
+            name = "ingredientSubstances",
+            dataType = ArrayType(StringType),
+            nullable = true
+          )
         )
       )
 
@@ -88,24 +93,33 @@ object Loaders extends LazyLogging {
           val setId = (obj \ "setId" \ "@root").text.toLowerCase()
           val ingredients = (obj \\ "ingredientSubstance")
           val genericMedicine = (obj \\ "genericMedicine" \ "name").headOption
-            .map(_.text
-              .trim()
-              .replace(",","")
-              .replace("  ", " ")
-              .toLowerCase())
+            .map(
+              _.text
+                .trim()
+                .replace(",", "")
+                .replace("  ", " ")
+                .toLowerCase()
+            )
             .orNull
           val activeMoiety =
-            (ingredients \\ "activeMoiety" \ "activeMoiety" \ "name").headOption.map(_.text
-              .trim()
-              .replace(",","")
-              .replace("  ", " ")
-              .toLowerCase())
-            .orNull
-          val ingredientNames = (ingredients \ "name").map(_.text
-            .trim()
-            .replace(",","")
-            .replace("  ", " ")
-            .toLowerCase()).toArray
+            (ingredients \\ "activeMoiety" \ "activeMoiety" \ "name").headOption
+              .map(
+                _.text
+                  .trim()
+                  .replace(",", "")
+                  .replace("  ", " ")
+                  .toLowerCase()
+              )
+              .orNull
+          val ingredientNames = (ingredients \ "name")
+            .map(
+              _.text
+                .trim()
+                .replace(",", "")
+                .replace("  ", " ")
+                .toLowerCase()
+            )
+            .toArray
           Row(setId, genericMedicine, activeMoiety, ingredientNames)
         })
 

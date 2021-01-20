@@ -20,7 +20,8 @@ object IndicationTest {
 class IndicationTest extends EtlSparkUnitTest {
 
   val getEfoDataFrame: PrivateMethod[Dataset[Row]] = PrivateMethod[Dataset[Row]]('getEfoDataframe)
-  val approvedIndications: PrivateMethod[Dataset[Row]] = PrivateMethod[Dataset[Row]]('approvedIndications)
+  val approvedIndications: PrivateMethod[Dataset[Row]] =
+    PrivateMethod[Dataset[Row]]('approvedIndications)
   import sparkSession.implicits._
 
   "Approved indications" should "filter indications with phase 4 clinical trials" in {
@@ -29,7 +30,7 @@ class IndicationTest extends EtlSparkUnitTest {
       IndicationRow("CHEMBL1", "EFO_1", 2),
       IndicationRow("CHEMBL1", "EFO_2", 2),
       IndicationRow("CHEMBL1", "EFO_3", 4),
-      IndicationRow("CHEMBL1", "EFO_4", 4),
+      IndicationRow("CHEMBL1", "EFO_4", 4)
     ).toDF
     // when
     val results = Indication invokePrivate approvedIndications(df)
@@ -42,9 +43,7 @@ class IndicationTest extends EtlSparkUnitTest {
     val inputDF: DataFrame = IndicationTest.efoDf(sparkSession)
     val expectedColumns = Set("efo_id", "efo_label", "efo_uri")
     // when
-    val results
-      : DataFrame = Indication invokePrivate getEfoDataFrame(
-      inputDF)
+    val results: DataFrame = Indication invokePrivate getEfoDataFrame(inputDF)
 
     // then
     results.columns.forall(expectedColumns.contains)
@@ -77,7 +76,8 @@ class IndicationTest extends EtlSparkUnitTest {
     val s = StructType(StructField("case", StringType) :: Nil)
     val df = sparkSession.createDataFrame(
       sparkSession.sparkContext.parallelize(inputs.map(_._1).map(Row(_))),
-      s)
+      s
+    )
     // when
     val results = df.withColumn("efo_id", Helpers.stripIDFromURI(col("case")))
     // then
@@ -88,7 +88,8 @@ class IndicationTest extends EtlSparkUnitTest {
         .map(r => r.getString(0))
         .collect
         .toList
-        .forall(expectedResultSet.contains))
+        .forall(expectedResultSet.contains)
+    )
   }
 
   "Processing ChEMBL indications data" should "correctly process raw ChEMBL data into expected format" in {
@@ -115,8 +116,8 @@ class IndicationTest extends EtlSparkUnitTest {
 
     val indication: DataFrame = Indication(indicationDf, efoDf)
     // when
-    val results: DataFrame = indication.select(
-      col("indications.rows.disease").as("efoId"))
+    val results: DataFrame = indication
+      .select(col("indications.rows.disease").as("efoId"))
       .filter(col("efoId").isNull)
     // then
     assert(results.count() == 0L)
@@ -129,12 +130,12 @@ class IndicationTest extends EtlSparkUnitTest {
     case class EfoId(efo_id: String)
     val data = Seq("EFO:0002618", "EFO:0003716", "EFO:0004232").map(Row(_))
     val df: DataFrame =
-      sparkSession.createDataFrame(sparkSession.sparkContext.parallelize(data),
-                                   StructType(StructField("efo_id", StringType) :: Nil))
+      sparkSession.createDataFrame(
+        sparkSession.sparkContext.parallelize(data),
+        StructType(StructField("efo_id", StringType) :: Nil)
+      )
     // when
-    val results
-      : DataFrame = Indication invokePrivate formatEfoIdsPM(
-      df)
+    val results: DataFrame = Indication invokePrivate formatEfoIdsPM(df)
     // then
     assert(
       results

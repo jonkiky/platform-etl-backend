@@ -177,7 +177,7 @@ object Configuration extends LazyLogging {
   }
 }
 
-/** EG. val newDF = ss.createDataFrame(df.rdd, renameAllCols(df.schema, renameFcn)) **/
+/** EG. val newDF = ss.createDataFrame(df.rdd, renameAllCols(df.schema, renameFcn)) * */
 object DataFrameSchemaHelper extends LazyLogging {
 
   def renameAllCols(schema: StructType, rename: String => String): StructType = {
@@ -200,8 +200,7 @@ object DataFrameSchemaHelper extends LazyLogging {
 
 }
 
-/**
-  Spark common functions
+/**  Spark common functions
   */
 object SparkSessionWrapper extends LazyLogging {
   type WriterConfigurator = DataFrameWriter[Row] => DataFrameWriter[Row]
@@ -224,8 +223,8 @@ object SparkSessionWrapper extends LazyLogging {
       .getOrCreate
 
   /** It creates an hashmap of dataframes.
-   Es. inputsDataFrame {"disease", Dataframe} , {"target", Dataframe}
-   Reading is the first step in the pipeline
+    *   Es. inputsDataFrame {"disease", Dataframe} , {"target", Dataframe}
+    *   Reading is the first step in the pipeline
     */
   def loader(
       inputFileConf: Map[String, Map[String, String]]

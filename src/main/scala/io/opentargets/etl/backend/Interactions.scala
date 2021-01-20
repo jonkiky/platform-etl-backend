@@ -109,10 +109,10 @@ object InteractionsHelpers extends LazyLogging {
       * @return a DataFrame
       */
     def generateIntacts(
-                         targets: DataFrame,
-                         rnacentral: DataFrame,
-                         humanmapping: DataFrame
-                       ): DataFrame = {
+        targets: DataFrame,
+        rnacentral: DataFrame,
+        humanmapping: DataFrame
+    ): DataFrame = {
       val mappingDF = targets.generateMapping(rnacentral, humanmapping)
       val intactInteractions = df.generateInteractions(mappingDF)
       intactInteractions
@@ -408,7 +408,7 @@ object Interactions extends LazyLogging {
 
     val outputs = otnetworksDF.keys map (name =>
       name -> Helpers.IOResourceConfig(common.outputFormat, common.output + s"/$name")
-      )
+    )
 
     Helpers.writeTo(outputs.toMap, otnetworksDF)
 

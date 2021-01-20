@@ -43,16 +43,16 @@ object Configuration extends LazyLogging {
   case class InputInfo(format: String, path: String)
   case class InputExtension(extensionType: String, path: String)
   case class DrugConfiguration(
-                                chemblMolecule: InputInfo,
-                                chemblIndication: InputInfo,
-                                chemblMechanism: InputInfo,
-                                chemblTarget: InputInfo,
-                                drugbankToChembl: InputInfo,
-                                drugExtensions: Seq[InputExtension],
-                                diseasePipeline: InputInfo,
-                                targetPipeline: InputInfo,
-                                evidencePipeline: InputInfo,
-                                drugOutput: String
+      chemblMolecule: InputInfo,
+      chemblIndication: InputInfo,
+      chemblMechanism: InputInfo,
+      chemblTarget: InputInfo,
+      drugbankToChembl: InputInfo,
+      drugExtensions: Seq[InputExtension],
+      diseasePipeline: InputInfo,
+      targetPipeline: InputInfo,
+      evidencePipeline: InputInfo,
+      drugOutput: String
   )
   case class Inputs(
       target: InputInfo,
@@ -67,7 +67,8 @@ object Configuration extends LazyLogging {
       mousephenotypes: InputInfo,
       interactions: InteractionsSection,
       hpo: InputInfo,
-      diseasehpo: InputInfo
+      diseasehpo: InputInfo,
+      mondo: InputInfo
   )
 
   case class Common(defaultSteps: Seq[String], inputs: Inputs, output: String, outputFormat: String)

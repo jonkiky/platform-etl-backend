@@ -2,11 +2,26 @@ package io.opentargets.etl.backend.Drug
 
 import io.opentargets.etl.backend.Configuration.InputExtension
 import io.opentargets.etl.backend.Drug.CrossReferencesExtensionTest.SimpleCrossReference
-import io.opentargets.etl.backend.Drug.SynonymExtensionTest.{Molecule, Synonym, SynonymArr, SynonymBadIdField, SynonymBadSynonymField, SynonymLong}
+import io.opentargets.etl.backend.Drug.SynonymExtensionTest.{
+  Molecule,
+  Synonym,
+  SynonymArr,
+  SynonymBadIdField,
+  SynonymBadSynonymField,
+  SynonymLong
+}
 import io.opentargets.etl.backend.EtlSparkUnitTest
 import io.opentargets.etl.backend.drug.DrugExtensions
 import io.opentargets.etl.backend.spark.Helpers.IOResourceConfig
-import org.apache.spark.sql.functions.{col, element_at, explode, flatten, map_keys, map_values, size => sparkSize}
+import org.apache.spark.sql.functions.{
+  col,
+  element_at,
+  explode,
+  flatten,
+  map_keys,
+  map_values,
+  size => sparkSize
+}
 import org.apache.spark.sql.types.ArrayType
 import org.apache.spark.sql.{DataFrame, Dataset, Row}
 import org.scalatest.PrivateMethodTester
@@ -21,7 +36,7 @@ class DrugExtensionsTest extends AnyFlatSpecLike with PrivateMethodTester {
     val extensionType = "x"
     val extensions = Seq(
       InputExtension(extensionType, "bad/path/to/file.csv"),
-      InputExtension(extensionType, "good/path/to/file.json"),
+      InputExtension(extensionType, "good/path/to/file.json")
     )
     // when
     val results = DrugExtensions invokePrivate groupExtensionsByType(extensionType, extensions)
@@ -31,7 +46,11 @@ class DrugExtensionsTest extends AnyFlatSpecLike with PrivateMethodTester {
 }
 
 object CrossReferencesExtensionTest {
-  case class SimpleCrossReference(id: String, source: String, reference: String) // an extension file has at least one ref field
+  case class SimpleCrossReference(
+      id: String,
+      source: String,
+      reference: String
+  ) // an extension file has at least one ref field
 }
 
 class CrossReferencesExtensionTest extends EtlSparkUnitTest {
@@ -52,7 +71,10 @@ class CrossReferencesExtensionTest extends EtlSparkUnitTest {
     assertResult(1)(results.select(map_keys(col("crossReferences"))).count())
     assertResult("ref1")(
       results
-        .select(explode(element_at(col("crossReferences"), "src1"))).first().getString(0))
+        .select(explode(element_at(col("crossReferences"), "src1")))
+        .first()
+        .getString(0)
+    )
   }
   // given a cross reference and the field does exist, it is added to the array
   "A cross reference extension file with an existing reference field" should "be added to the existing references" in {
@@ -73,18 +95,23 @@ class CrossReferencesExtensionTest extends EtlSparkUnitTest {
     // given
     val id = "id"
     val molDf = Seq(Molecule(id, "", Array(), Array(), Map("src" -> Array("existingRef")))).toDF
-    val xRefDf = Seq(SimpleCrossReference(id, "src", "ref1"),
-                     SimpleCrossReference(id, "src1", "ref2"),
-                     SimpleCrossReference(id, "src2", "ref3")).toDF
+    val xRefDf = Seq(
+      SimpleCrossReference(id, "src", "ref1"),
+      SimpleCrossReference(id, "src1", "ref2"),
+      SimpleCrossReference(id, "src2", "ref3")
+    ).toDF
     // when
     val results = DrugExtensions invokePrivate addCrossReferenceToMolecules(molDf, xRefDf)
     // then
     assertResult(3, "All keys should be in the returned map")(
-      results.select(sparkSize(map_keys(col("crossReferences")))).head.getInt(0))
+      results.select(sparkSize(map_keys(col("crossReferences")))).head.getInt(0)
+    )
     assertResult(4, "All new references should be in the returned map")(
-      results.select(explode(flatten(map_values(col("crossReferences"))))).count())
+      results.select(explode(flatten(map_values(col("crossReferences"))))).count()
+    )
     assertResult(2, "New reference should be added to existing key")(
-      results.select(explode(element_at(col("crossReferences"), "src"))).count())
+      results.select(explode(element_at(col("crossReferences"), "src"))).count()
+    )
   }
 
   "A cross reference extension file" should "only update targeted fields" in {
@@ -92,11 +119,12 @@ class CrossReferencesExtensionTest extends EtlSparkUnitTest {
     // given
     val id = "id"
     val refMap = Map(
-      "existingSrc1" ->Array("es1", "es2"),
-      "existingSrc2" ->Array("es3", "es4")
+      "existingSrc1" -> Array("es1", "es2"),
+      "existingSrc2" -> Array("es3", "es4")
     )
     val molDf = Seq(Molecule(id, "", Array(), Array(), refMap)).toDF
-    val xRefDf = Seq(SimpleCrossReference(id, "src", "ref1"),
+    val xRefDf = Seq(
+      SimpleCrossReference(id, "src", "ref1"),
       SimpleCrossReference(id, "src", "ref2"),
       SimpleCrossReference(id, "src", "ref3"),
       SimpleCrossReference(id, "existingSrc1", "ref3")
@@ -105,7 +133,8 @@ class CrossReferencesExtensionTest extends EtlSparkUnitTest {
     val results = DrugExtensions invokePrivate addCrossReferenceToMolecules(molDf, xRefDf)
     // then
     assertResult(2, "Existing reference should not be changed")(
-      results.select(explode(element_at(col("crossReferences"), "existingSrc2"))).count())
+      results.select(explode(element_at(col("crossReferences"), "existingSrc2"))).count()
+    )
   }
 
 }
@@ -116,14 +145,20 @@ object SynonymExtensionTest {
   case class SynonymBadIdField(ids: String, synonyms: String)
   case class Synonym(id: String, synonyms: String)
   case class SynonymArr(id: String, synonyms: Array[String])
-  case class SynonymLong(id: String, synonyms: String, foo: String, bar: String) // extra columns should not effect result
+  case class SynonymLong(
+      id: String,
+      synonyms: String,
+      foo: String,
+      bar: String
+  ) // extra columns should not effect result
   // Minimum molecule DF
   case class Molecule(
       id: String,
       drugbank_id: String,
       tradeNames: Array[String],
       synonyms: Array[String],
-      crossReferences: Map[String, Array[String]] = Map.empty[String, Array[String]])
+      crossReferences: Map[String, Array[String]] = Map.empty[String, Array[String]]
+  )
 }
 class SynonymExtensionTest extends EtlSparkUnitTest {
 
@@ -156,8 +191,8 @@ class SynonymExtensionTest extends EtlSparkUnitTest {
     val id = "id"
     val syn = "syn"
     val molDf = Seq(Molecule(id, "", Array(), Array(syn))).toDF
-    val synDf = DrugExtensions invokePrivate stardardiseSynonyms(
-      Seq(SynonymLong(id, syn, "foo", "bar")).toDF)
+    val synDf =
+      DrugExtensions invokePrivate stardardiseSynonyms(Seq(SynonymLong(id, syn, "foo", "bar")).toDF)
     // when
     val results = DrugExtensions invokePrivate addSynonymsToMolecule(molDf, synDf)
     // then
@@ -171,8 +206,10 @@ class SynonymExtensionTest extends EtlSparkUnitTest {
     // when
     val results = DrugExtensions invokePrivate stardardiseSynonyms(inputDf)
     // then
-    assert(results.schema("synonyms").dataType.isInstanceOf[ArrayType],
-           s"Expected array but was ${results.schema("synonyms").dataType.typeName}")
+    assert(
+      results.schema("synonyms").dataType.isInstanceOf[ArrayType],
+      s"Expected array but was ${results.schema("synonyms").dataType.typeName}"
+    )
   }
 
   "Adding synonyms to molecule" should "not add duplicate synonyms" in {

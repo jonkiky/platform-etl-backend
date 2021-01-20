@@ -70,10 +70,10 @@ object EvidenceDrugDirect extends LazyLogging {
     val inputDataFrame = Helpers.readFrom(mappedInputs)
 
     logger.info("compute directly aggregated references per disease, drug, ...")
-    val dfDirectInfo = inputDataFrame("evidence")
-      .generateEntries
+    val dfDirectInfo = inputDataFrame("evidence").generateEntries
 
-    val diseases = Disease.compute()
+    val diseases = Disease
+      .compute()
       .selectExpr("id as disease", "ancestors")
     logger.info("annotate each entry with the descendant list per disease")
     val dfDirectInfoAnnotated = dfDirectInfo

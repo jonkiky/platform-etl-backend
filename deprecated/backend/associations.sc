@@ -101,17 +101,15 @@ object AssociationHelpers {
 
     def groupByDataTypes: DataFrame = {
       df.groupBy(
-          $"disease_id",
-          $"target_id",
-          $"dataType"
-        )
-        .agg(
-          first($"target").as("target"),
-          first($"disease").as("disease"),
-          collect_list($"datasource_count").as("datasource_counts"),
-          collect_list($"datasource_score").as("datasource_scores")
-        )
-        .withColumn("_v", expr("flatten(transform(datasource_scores, x -> map_values(x)))"))
+        $"disease_id",
+        $"target_id",
+        $"dataType"
+      ).agg(
+        first($"target").as("target"),
+        first($"disease").as("disease"),
+        collect_list($"datasource_count").as("datasource_counts"),
+        collect_list($"datasource_score").as("datasource_scores")
+      ).withColumn("_v", expr("flatten(transform(datasource_scores, x -> map_values(x)))"))
         .harmonic("_hs", "_v")
         .withColumn(
           "datatype_count",
@@ -124,18 +122,16 @@ object AssociationHelpers {
 
     def groupByPair: DataFrame = {
       df.groupBy(
-          $"disease_id",
-          $"target_id"
-        )
-        .agg(
-          first($"target").as("target"),
-          first($"disease").as("disease"),
-          flatten(collect_list($"datasource_counts")).as("datasource_counts"),
-          flatten(collect_list($"datasource_scores")).as("datasource_scores"),
-          collect_list($"datatype_count").as("datatype_counts"),
-          collect_list($"datatype_score").as("datatype_scores")
-        )
-        .withColumn("id", concat_ws("-", $"target_id", $"disease_id"))
+        $"disease_id",
+        $"target_id"
+      ).agg(
+        first($"target").as("target"),
+        first($"disease").as("disease"),
+        flatten(collect_list($"datasource_counts")).as("datasource_counts"),
+        flatten(collect_list($"datasource_scores")).as("datasource_scores"),
+        collect_list($"datatype_count").as("datatype_counts"),
+        collect_list($"datatype_score").as("datatype_scores")
+      ).withColumn("id", concat_ws("-", $"target_id", $"disease_id"))
         .withColumn(
           "datasource_scores",
           expr(

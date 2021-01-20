@@ -489,7 +489,7 @@ object Search extends LazyLogging {
       .persist(StorageLevel.DISK_ONLY)
 
     val dLUT = diseases
-    //      .withColumn("phenotype_labels", expr("transform(phenotypes, f -> f.label)"))
+      //      .withColumn("phenotype_labels", expr("transform(phenotypes, f -> f.label)"))
       .withColumn(
         "disease_labels",
         C.flattenCat(
@@ -608,10 +608,12 @@ object Search extends LazyLogging {
     val outputs = Seq("search_diseases", "search_targets", "search_drugs")
 
     val outputConfs = outputs
-      .map(
-        name =>
-          name -> IOResourceConfig(context.configuration.common.outputFormat,
-                                   context.configuration.common.output + s"/$name"))
+      .map(name =>
+        name -> IOResourceConfig(
+          context.configuration.common.outputFormat,
+          context.configuration.common.output + s"/$name"
+        )
+      )
       .toMap
 
     val outputDFs = (outputs zip Seq(searchDiseases, searchTargets, searchDrugs)).toMap

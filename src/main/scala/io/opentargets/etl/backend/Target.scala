@@ -45,67 +45,66 @@ object TargetHelpers {
     def getHallMarksInfo: DataFrame = {
 
       df.withColumn(
-          "hallMarks",
-          struct(
-            when(
-              size(col("hallMarksRoot.attributes")) > 0,
-              expr(
-                "transform(hallMarksRoot.attributes, hm -> named_struct('pmid',cast(hm.pmid AS LONG),'attribute_name', hm.attribute_name, 'description', hm.description))"
-              )
-            ).alias("attributes"),
-            when(
-              size(col("hallMarksRoot.cancer_hallmarks")) > 0,
-              expr(
-                "transform(hallMarksRoot.cancer_hallmarks, hm -> named_struct('pmid',cast(hm.pmid AS LONG),'description', hm.description,'label', hm.label,'promote', hm.promote,'suppress', hm.suppress))"
-              )
-            ).alias("cancer_hallmarks"),
-            when(
-              size(col("hallMarksRoot.function_summary")) > 0,
-              expr(
-                "transform(hallMarksRoot.function_summary, hm -> named_struct('pmid',cast(hm.pmid AS LONG),'description', hm.description))"
-              )
-            ).alias("function_summary")
-          )
+        "hallMarks",
+        struct(
+          when(
+            size(col("hallMarksRoot.attributes")) > 0,
+            expr(
+              "transform(hallMarksRoot.attributes, hm -> named_struct('pmid',cast(hm.pmid AS LONG),'attribute_name', hm.attribute_name, 'description', hm.description))"
+            )
+          ).alias("attributes"),
+          when(
+            size(col("hallMarksRoot.cancer_hallmarks")) > 0,
+            expr(
+              "transform(hallMarksRoot.cancer_hallmarks, hm -> named_struct('pmid',cast(hm.pmid AS LONG),'description', hm.description,'label', hm.label,'promote', hm.promote,'suppress', hm.suppress))"
+            )
+          ).alias("cancer_hallmarks"),
+          when(
+            size(col("hallMarksRoot.function_summary")) > 0,
+            expr(
+              "transform(hallMarksRoot.function_summary, hm -> named_struct('pmid',cast(hm.pmid AS LONG),'description', hm.description))"
+            )
+          ).alias("function_summary")
         )
-        .drop("hallMarksRoot")
+      ).drop("hallMarksRoot")
     }
 
     // Manipulate safety info. Pubmed as long and unspecified_interaction_effects should be null in case of empty array.
     def getSafetyInfo: DataFrame = {
 
       df.withColumn(
-          "safetyTransf",
-          struct(
-            when(
-              size(col("safetyRoot.adverse_effects")) > 0,
-              expr(
-                "transform(safetyRoot.adverse_effects, sft -> named_struct('inhibition_effects', sft.inhibition_effects, 'unspecified_interaction_effects', if(size(sft.unspecified_interaction_effects) > 0, sft.unspecified_interaction_effects, null), 'organs_systems_affected', sft.organs_systems_affected, 'activation_effects', sft.activation_effects, 'references', transform(sft.references, v -> named_struct('pmid',cast(v.pmid AS LONG),'ref_label', v.ref_label, 'ref_link', v.ref_link))))"
-              )
-            ).otherwise(lit(null)).alias("adverse_effects"),
-            when(
-              size(col("safetyRoot.safety_risk_info")) > 0,
-              expr(
-                "transform(safetyRoot.safety_risk_info, sft -> named_struct('organs_systems_affected', sft.organs_systems_affected, 'safety_liability', sft.safety_liability, 'references', transform(sft.references, v -> named_struct('pmid',cast(v.pmid AS LONG),'ref_label', v.ref_label, 'ref_link', v.ref_link))))"
-              )
-            ).otherwise(lit(null)).alias("safety_risk_info"),
-            when(
-              size(col("safetyRoot.experimental_toxicity")) > 0,
-              expr(
-                "transform(safetyRoot.experimental_toxicity, sft -> named_struct('data_source', sft.data_source, 'data_source_reference_link', sft.data_source_reference_link, 'experiment_details', sft.experiment_details))"
-              )
-            ).otherwise(lit(null)).alias("experimental_toxicity")
-          )
-        )
-        .withColumn(
-          "safety",
+        "safetyTransf",
+        struct(
           when(
-            col("safetyTransf.adverse_effects").isNull and col("safetyTransf.safety_risk_info").isNull and col(
-              "safetyTransf.experimental_toxicity"
-            ).isNull,
-            null
-          ).otherwise(col("safetyTransf"))
+            size(col("safetyRoot.adverse_effects")) > 0,
+            expr(
+              "transform(safetyRoot.adverse_effects, sft -> named_struct('inhibition_effects', sft.inhibition_effects, 'unspecified_interaction_effects', if(size(sft.unspecified_interaction_effects) > 0, sft.unspecified_interaction_effects, null), 'organs_systems_affected', sft.organs_systems_affected, 'activation_effects', sft.activation_effects, 'references', transform(sft.references, v -> named_struct('pmid',cast(v.pmid AS LONG),'ref_label', v.ref_label, 'ref_link', v.ref_link))))"
+            )
+          ).otherwise(lit(null)).alias("adverse_effects"),
+          when(
+            size(col("safetyRoot.safety_risk_info")) > 0,
+            expr(
+              "transform(safetyRoot.safety_risk_info, sft -> named_struct('organs_systems_affected', sft.organs_systems_affected, 'safety_liability', sft.safety_liability, 'references', transform(sft.references, v -> named_struct('pmid',cast(v.pmid AS LONG),'ref_label', v.ref_label, 'ref_link', v.ref_link))))"
+            )
+          ).otherwise(lit(null)).alias("safety_risk_info"),
+          when(
+            size(col("safetyRoot.experimental_toxicity")) > 0,
+            expr(
+              "transform(safetyRoot.experimental_toxicity, sft -> named_struct('data_source', sft.data_source, 'data_source_reference_link', sft.data_source_reference_link, 'experiment_details', sft.experiment_details))"
+            )
+          ).otherwise(lit(null)).alias("experimental_toxicity")
         )
-        .drop("safetyRoot", "safetyTransf")
+      ).withColumn(
+        "safety",
+        when(
+          col("safetyTransf.adverse_effects").isNull and col(
+            "safetyTransf.safety_risk_info"
+          ).isNull and col(
+            "safetyTransf.experimental_toxicity"
+          ).isNull,
+          null
+        ).otherwise(col("safetyTransf"))
+      ).drop("safetyRoot", "safetyTransf")
     }
 
     def setIdAndSelectFromTargets: DataFrame = {
@@ -164,7 +163,9 @@ object TargetHelpers {
         .withColumn(
           "tractability",
           when(
-            col("tractabilityTransf.antibody").isNull and col("tractabilityTransf.smallmolecule").isNull and col(
+            col("tractabilityTransf.antibody").isNull and col(
+              "tractabilityTransf.smallmolecule"
+            ).isNull and col(
               "tractabilityTransf.other_modalities"
             ).isNull,
             null

@@ -131,7 +131,7 @@ object ClinicalTrials extends LazyLogging {
     val meshes = inputs("interventionsMesh")
 
     val others = otherNames
-    // .withColumn("name", rtrim(trim(lower($"name")), ","))
+      // .withColumn("name", rtrim(trim(lower($"name")), ","))
       .groupBy($"nct_id", $"intervention_id".as("id"))
       .agg(first($"name").as("name"), collect_set($"name").as("other_names"))
       .withColumn("other_names", concat($"other_names", array($"name")))

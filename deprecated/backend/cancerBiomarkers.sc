@@ -64,9 +64,9 @@ object CancerBiomarkersHelpers {
         )
 
       /** The field individualbiomarker contains a specific fields if the biomarker id is a composed id.
-		  It is important to idenfity the unique identifier id.
-		  Below the id is the proper identifier
-		**/
+        *    It is important to idenfity the unique identifier id.
+        *    Below the id is the proper identifier
+        */
       val biomarkerIdentifier =
         """
           |case

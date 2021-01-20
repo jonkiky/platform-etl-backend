@@ -35,6 +35,7 @@ object DiseaseHelpers {
         .groupBy("ancestor")
         .agg(collect_set(col("id")).as("descendants"))
         .withColumnRenamed("ancestor", "id")
+        .withColumn("phenotypes", lit(Array.empty[String]))
         .withColumn(
           "descendants",
           array_except(
@@ -60,9 +61,7 @@ object DiseaseHelpers {
           "leaf",
           "path_labels",
           "therapeutic_labels",
-          "sources",
-          "phenotypesCount",
-          "sourcePhenotypes"
+          "sources"
         )
 
       efosRenamed

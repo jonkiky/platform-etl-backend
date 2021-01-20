@@ -10,12 +10,7 @@ import io.opentargets.etl.backend.spark.Helpers._
 
 import scala.util.Random
 
-class HelpersTest
-    extends EtlSparkUnitTest
-    with TableDrivenPropertyChecks
-    with LazyLogging
-    {
-
+class HelpersTest extends EtlSparkUnitTest with TableDrivenPropertyChecks with LazyLogging {
 
   // given
   val renameFun: String => String = _.toUpperCase
@@ -23,7 +18,8 @@ class HelpersTest
     StructType(
       StructField("a", IntegerType, nullable = true) ::
         StructField("b", LongType, nullable = false) ::
-        StructField("c", BooleanType, nullable = false) :: Nil)
+        StructField("c", BooleanType, nullable = false) :: Nil
+    )
   lazy val testData: Seq[Row] = Seq(Row(1, 1L, true), Row(2, 2L, false))
   lazy val testDf: DataFrame =
     sparkSession.createDataFrame(sparkSession.sparkContext.parallelize(testData), testStruct)
@@ -39,7 +35,9 @@ class HelpersTest
     assert(
       results.values.forall(ioResConf =>
         ioResConf.format == config.common.outputFormat &&
-          inputFileNames.contains(ioResConf.path.split("/").last)))
+          inputFileNames.contains(ioResConf.path.split("/").last)
+      )
+    )
 
   }
 
@@ -59,7 +57,7 @@ class HelpersTest
     // when
     val results = Helpers.loadFileToDF(input)(sparkSession)
     // then
-    assert( !results.isEmpty, "The provided dataframe should not be empty.")
+    assert(!results.isEmpty, "The provided dataframe should not be empty.")
   }
 
   "Rename columns" should "rename all columns using given function" in {
@@ -73,12 +71,15 @@ class HelpersTest
   it should "correctly rename columns in nested arrays" in {
     // given
     val structWithArray = testStruct
-      .add("d",
-           ArrayType(
-             new StructType()
-               .add("e", StringType)
-               .add("f", StringType)
-               .add("g", IntegerType)))
+      .add(
+        "d",
+        ArrayType(
+          new StructType()
+            .add("e", StringType)
+            .add("f", StringType)
+            .add("g", IntegerType)
+        )
+      )
     // when
     val results = renameAllCols(structWithArray, renameFun)
     // then
@@ -88,7 +89,8 @@ class HelpersTest
         .elementType
         .asInstanceOf[StructType]
         .fieldNames
-        .forall(_.head.isUpper))
+        .forall(_.head.isUpper)
+    )
   }
 
   private val potentialColumnNames = Table(

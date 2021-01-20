@@ -18,10 +18,10 @@ import org.apache.spark.storage.StorageLevel
   *    and add to the unique fields the corresponding geneid in order to make unique
   *    the evidence
   * 3. write all back to jsonl gz but partitionby datasource
-  * */
+  */
 object EvidenceProteinFix extends LazyLogging {
-  def buildLUT(genes: DataFrame, proteinColName: String, genesColName: String)(
-      implicit ss: SparkSession
+  def buildLUT(genes: DataFrame, proteinColName: String, genesColName: String)(implicit
+      ss: SparkSession
   ): DataFrame = {
 
     import ss.implicits._

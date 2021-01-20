@@ -13,8 +13,7 @@ import org.apache.spark.sql.functions.{
 }
 import org.apache.spark.sql.{DataFrame, SparkSession}
 
-/**
-  * Object for preparing mechanism of action section of the drug object.
+/** Object for preparing mechanism of action section of the drug object.
   *
   * Output structure:
   *
@@ -30,20 +29,17 @@ import org.apache.spark.sql.{DataFrame, SparkSession}
   * ---- targetName
   * -- uniqueActiontype
   * -- unqueTargetType
-  *
-
   */
 object MechanismOfAction extends LazyLogging {
 
-  /**
-    *
-    * @param mechanismDf: raw data from Chembl
+  /** @param mechanismDf: raw data from Chembl
     * @param targetDf: raw data from Chembl
     * @param geneDf: gene parquet file listed under target in configuration
     * @param sparkSession implicit
     */
-  def apply(mechanismDf: DataFrame, targetDf: DataFrame, geneDf: DataFrame)(
-    implicit sparkSession: SparkSession): DataFrame = {
+  def apply(mechanismDf: DataFrame, targetDf: DataFrame, geneDf: DataFrame)(implicit
+      sparkSession: SparkSession
+  ): DataFrame = {
 
     logger.info("Processing mechanisms of action")
     val mechanism = mechanismDf
@@ -65,16 +61,22 @@ object MechanismOfAction extends LazyLogging {
           |or targets is not null
           |""".stripMargin
       )
-      .transform(nest(_: DataFrame,
-                      List("mechanismOfAction", "references", "targetName", "targets"),
-                      "rows"))
+      .transform(
+        nest(_: DataFrame, List("mechanismOfAction", "references", "targetName", "targets"), "rows")
+      )
       .groupBy("id")
-      .agg(collect_list("rows") as "rows",
-           collect_set("action_type") as "uniqueActionTypes",
-           collect_set("target_type") as "uniqueTargetTypes")
-      .transform(nest(_: DataFrame,
-                      List("rows", "uniqueActionTypes", "uniqueTargetTypes"),
-                      "mechanismsOfAction"))
+      .agg(
+        collect_list("rows") as "rows",
+        collect_set("action_type") as "uniqueActionTypes",
+        collect_set("target_type") as "uniqueTargetTypes"
+      )
+      .transform(
+        nest(
+          _: DataFrame,
+          List("rows", "uniqueActionTypes", "uniqueTargetTypes"),
+          "mechanismsOfAction"
+        )
+      )
   }
 
   private def chemblMechanismReferences(dataFrame: DataFrame): DataFrame = {
@@ -85,8 +87,10 @@ object MechanismOfAction extends LazyLogging {
       .select(col("id"), explode(col("mechanism_refs")))
       .groupBy("id", "col.ref_type")
       .agg(collect_list("col.ref_id").as("ref_id"), collect_list("col.ref_url").as("ref_url"))
-      .withColumn("references",
-                  struct(col("ref_type").as("source"), col("ref_id").as("ids"), col("ref_url").as("urls")))
+      .withColumn(
+        "references",
+        struct(col("ref_type").as("source"), col("ref_id").as("ids"), col("ref_url").as("urls"))
+      )
       .groupBy("id")
       .agg(collect_list("references").as("references"))
   }
@@ -104,10 +108,12 @@ object MechanismOfAction extends LazyLogging {
       .withColumn("target_components", explode(col("target_components")))
       .filter(col("target_components.accession").isNotNull)
       .withColumn("target_type", lower(col("target_type")))
-      .select(col("pref_name").as("targetName"),
+      .select(
+        col("pref_name").as("targetName"),
         col("target_components.accession").as("uniprot_id"),
         col("target_type"),
-        col("target_chembl_id"))
+        col("target_chembl_id")
+      )
     val genes = gene.select(geneCols.map(col): _*)
 
     targetDf

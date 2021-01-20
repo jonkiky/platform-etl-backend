@@ -14,8 +14,7 @@ import org.apache.spark.sql.types._
 import org.apache.spark.sql._
 import com.typesafe.scalalogging.LazyLogging
 
-/**
-  * export JAVA_OPTS="-Xms1G -Xmx24G"
+/** export JAVA_OPTS="-Xms1G -Xmx24G"
   * time amm opentargets-epmc-entity-resolution.sc
   * --entitiesUri ../etl/mkarmona/association/tags_Annot_PMC1240624_PMC1474480_v01.jsonl
   * --lutsUri ../etl/mkarmona/association/search_\\*\\*\/part\\*.json
@@ -50,18 +49,21 @@ object ETL extends LazyLogging {
     val data = sparkSession.read
       .json(uri)
       // .withColumn("terms", concat($"GP", $"DS"))
-      .withColumn("normalised_gp",
-                  transform($"GP",
-                            c =>
-                              struct(normalise(c).as("term_norm"),
-                                     c.as("term_raw"),
-                                     lit("target").as("term_type"))))
-      .withColumn("normalised_ds",
-                  transform($"DS",
-                            c =>
-                              struct(normalise(c).as("term_norm"),
-                                     c.as("term_raw"),
-                                     lit("disease").as("term_type"))))
+      .withColumn(
+        "normalised_gp",
+        transform(
+          $"GP",
+          c => struct(normalise(c).as("term_norm"), c.as("term_raw"), lit("target").as("term_type"))
+        )
+      )
+      .withColumn(
+        "normalised_ds",
+        transform(
+          $"DS",
+          c =>
+            struct(normalise(c).as("term_norm"), c.as("term_raw"), lit("disease").as("term_type"))
+        )
+      )
       .withColumn("normalised_terms", concat($"normalised_gp", $"normalised_ds"))
       .withColumn("normalised_term", explode($"normalised_terms"))
       .selectExpr("*", "normalised_term.*")
@@ -82,9 +84,10 @@ object ETL extends LazyLogging {
     val data = sparkSession.read
       .json(uri)
       .selectExpr(selectedColumns: _*)
-      .withColumn("normalised_keywords",
-                  transform($"keywords",
-                            c => struct(normalise(c).as("keyword_norm"), c.as("keyword_raw"))))
+      .withColumn(
+        "normalised_keywords",
+        transform($"keywords", c => struct(normalise(c).as("keyword_norm"), c.as("keyword_raw")))
+      )
       .withColumn("normalised_keyword", explode(col("normalised_keywords")))
       .withColumnRenamed("entity", "keyword_type")
       .selectExpr("*", "normalised_keyword.*")
@@ -92,8 +95,9 @@ object ETL extends LazyLogging {
     data
   }
 
-  def resolveEntities(entities: DataFrame, luts: DataFrame)(
-      implicit sparkSession: SparkSession): DataFrame = {
+  def resolveEntities(entities: DataFrame, luts: DataFrame)(implicit
+      sparkSession: SparkSession
+  ): DataFrame = {
     import sparkSession.implicits._
 
     val dict = entities
@@ -101,27 +105,42 @@ object ETL extends LazyLogging {
       .groupBy($"pmid")
       .agg(
         collect_set(struct($"term_raw", $"term_norm", $"id", $"term_type", $"keyword_type")).as(
-          "terms")
+          "terms"
+        )
       )
       .withColumn("terms_mapped", filter($"terms", c => c.getField("id").isNotNull))
       .withColumn("terms_not_mapped", filter($"terms", c => c.getField("id").isNull))
-      .withColumn("targets_mapped",
-                  filter($"terms_mapped",
-                         c =>
-                           c.getField("term_type") === c.getField("keyword_type") and c.getField(
-                             "keyword_type") === "target"))
-      .withColumn("diseases_mapped",
-                  filter($"terms_mapped",
-                         c =>
-                           c.getField("term_type") === c.getField("keyword_type") and c.getField(
-                             "keyword_type") === "disease"))
+      .withColumn(
+        "targets_mapped",
+        filter(
+          $"terms_mapped",
+          c =>
+            c.getField("term_type") === c.getField("keyword_type") and c.getField(
+              "keyword_type"
+            ) === "target"
+        )
+      )
+      .withColumn(
+        "diseases_mapped",
+        filter(
+          $"terms_mapped",
+          c =>
+            c.getField("term_type") === c.getField("keyword_type") and c.getField(
+              "keyword_type"
+            ) === "disease"
+        )
+      )
       .withColumn(
         "drugs_mapped",
-        filter($"terms_mapped",
-               c => c.getField("term_type") === "drug" and c.getField("keyword_type") === "drug"))
+        filter(
+          $"terms_mapped",
+          c => c.getField("term_type") === "drug" and c.getField("keyword_type") === "drug"
+        )
+      )
       .withColumn(
         "cross_mapped",
-        filter($"terms_mapped", c => c.getField("term_type") =!= c.getField("keyword_type")))
+        filter($"terms_mapped", c => c.getField("term_type") =!= c.getField("keyword_type"))
+      )
       .drop("terms")
 
     dict
@@ -140,5 +159,5 @@ object ETL extends LazyLogging {
 }
 
 @main
-  def main(entitiesUri: String, lutsUri: String, outputUri: String): Unit =
-    ETL(entitiesUri, lutsUri, outputUri)
+def main(entitiesUri: String, lutsUri: String, outputUri: String): Unit =
+  ETL(entitiesUri, lutsUri, outputUri)
